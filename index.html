@@ -44,12 +44,6 @@
         <button id="focusGalaxy">View Entire Galaxy</button>
     </div>
     
-    <div id="time-control">
-        <label for="time-slider">Time: <span id="time-value">0</span></label>
-        <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
-        <button id="play-pause">Play</button>
-        <button id="reset-time">Reset</button>
-    </div>
     
     <div id="drake-equation">
         <h2>Drake Equation Calculator</h2>
@@ -102,6 +96,15 @@
         </div>
         
         <button id="generate-planets">Generate Civilizations</button>
+        
+        <div class="time-control">
+            <label for="time-slider">Time: <span id="time-value">0</span></label>
+            <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
+            <div class="time-buttons">
+                <button id="play-pause">Play</button>
+                <button id="reset-time">Reset</button>
+            </div>
+        </div>
     </div>
     
     <style>
@@ -172,22 +175,26 @@
             background-color: #388E3C;
         }
         
-        #time-control {
-            position: absolute;
-            top: 10px;
-            left: 200px;
-            background-color: rgba(0, 0, 0, 0.7);
+        .time-control {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 100;
+        }
+        
+        .time-buttons {
+            margin-top: 10px;
             display: flex;
-            align-items: center;
             gap: 10px;
         }
         
         #time-slider {
-            width: 200px;
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        #play-pause, #reset-time {
+            flex: 1;
         }
     </style>
     
@@ -224,7 +231,7 @@
         let isPlaying = false;
         let animationId = null;
         let lastUpdateTime = 0;
-        const TIME_SPEED = 0.5; // Time units per second
+        const TIME_SPEED = 3.0; // Time units per second (increased for faster playback)
         
         // Initialize the scene
         function init() {
@@ -394,8 +401,13 @@
                 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
                 planet.position.set(x, y, z);
                 
-                // Assign random expansion rate (units of distance per time unit)
-                const expansionRate = 2 + Math.random() * 8;
+                // Assign random expansion rate with wider range (units of distance per time unit)
+                // Some civilizations expand very slowly, others very quickly
+                const expansionRate = Math.random() < 0.3 ? 
+                    0.5 + Math.random() * 2 :  // 30% chance of slow expansion (0.5-2.5)
+                    Math.random() < 0.6 ? 
+                        3 + Math.random() * 7 :  // 42% chance of medium expansion (3-10)
+                        10 + Math.random() * 15;  // 28% chance of fast expansion (10-25)
                 
                 // Add a pulsing effect to make civilizations noticeable
                 planet.userData = {
@@ -811,6 +823,20 @@
         
         // Check for intersections between civilization spheres
         function checkSpheresIntersection() {
+            // Reset all planets if time is 0
+            if (timeValue === 0) {
+                for (let planet of civilizationPlanets) {
+                    if (planet.userData.collided) {
+                        planet.material.color.setHSL(
+                            planet.userData.originalColor.h,
+                            planet.userData.originalColor.s,
+                            planet.userData.originalColor.l
+                        );
+                        planet.userData.collided = false;
+                    }
+                }
+            }
+            
             // Loop through all pairs of planets
             for (let i = 0; i < civilizationPlanets.length; i++) {
                 const planetA = civilizationPlanets[i];
@@ -832,24 +858,6 @@
                             planetA.userData.collided = true;
                             planetB.userData.collided = true;
                         }
-                    } else if (timeValue === 0) {
-                        // Reset colors when time is reset to 0
-                        if (planetA.userData.collided) {
-                            planetA.material.color.setHSL(
-                                planetA.userData.originalColor.h,
-                                planetA.userData.originalColor.s,
-                                planetA.userData.originalColor.l
-                            );
-                            planetA.userData.collided = false;
-                        }
-                        if (planetB.userData.collided) {
-                            planetB.material.color.setHSL(
-                                planetB.userData.originalColor.h,
-                                planetB.userData.originalColor.s,
-                                planetB.userData.originalColor.l
-                            );
-                            planetB.userData.collided = false;
-                        }
                     }
                 }
                 
@@ -862,12 +870,13 @@
         function updateSphereOfInfluence(planet, radius) {
             // Get or create the influence sphere
             if (!planet.userData.influenceSphere) {
-                const sphereGeometry = new THREE.SphereGeometry(1, 16, 8);
+                const sphereGeometry = new THREE.SphereGeometry(1, 24, 16);
                 const sphereMaterial = new THREE.MeshBasicMaterial({
                     color: planet.material.color.getHex(),
                     transparent: true,
-                    opacity: 0.1,
-                    wireframe: true
+                    opacity: 0.2,
+                    wireframe: true,
+                    wireframeLinewidth: 2
                 });
                 
                 const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
