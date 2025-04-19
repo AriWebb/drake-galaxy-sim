@@ -44,6 +44,13 @@
         <button id="focusGalaxy">View Entire Galaxy</button>
     </div>
     
+    <div id="time-control">
+        <label for="time-slider">Time: <span id="time-value">0</span></label>
+        <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
+        <button id="play-pause">Play</button>
+        <button id="reset-time">Reset</button>
+    </div>
+    
     <div id="drake-equation">
         <h2>Drake Equation Calculator</h2>
         <p>Adjust parameters to calculate potential civilizations in our galaxy</p>
@@ -164,6 +171,24 @@
         #generate-planets:hover {
             background-color: #388E3C;
         }
+        
+        #time-control {
+            position: absolute;
+            top: 10px;
+            left: 200px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #time-slider {
+            width: 200px;
+        }
     </style>
     
     <script type="importmap">
@@ -193,6 +218,13 @@
         // Variables for Drake Equation
         let civilizationPlanets = [];
         let drakeN = 0;
+        
+        // Variables for time simulation
+        let timeValue = 0;
+        let isPlaying = false;
+        let animationId = null;
+        let lastUpdateTime = 0;
+        const TIME_SPEED = 0.5; // Time units per second
         
         // Initialize the scene
         function init() {
@@ -234,6 +266,9 @@
             
             // Add Drake equation slider handlers
             setupDrakeEquation();
+            
+            // Add time slider handlers
+            setupTimeControls();
             
             // Start animation loop
             animate();
@@ -341,7 +376,8 @@
                 }
                 
                 // Create the planet
-                const planetGeometry = new THREE.SphereGeometry(15 + Math.random() * 15, 16, 16);
+                const baseRadius = 15 + Math.random() * 15;
+                const planetGeometry = new THREE.SphereGeometry(baseRadius, 16, 16);
                 
                 // Choose a fully random color for each civilization
                 const hue = Math.random(); // Random hue across the full spectrum
@@ -358,11 +394,22 @@
                 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
                 planet.position.set(x, y, z);
                 
+                // Assign random expansion rate (units of distance per time unit)
+                const expansionRate = 2 + Math.random() * 8;
+                
                 // Add a pulsing effect to make civilizations noticeable
                 planet.userData = {
                     initialScale: 1,
                     pulsePhase: Math.random() * Math.PI * 2,
-                    pulseSpeed: 0.5 + Math.random() * 0.5
+                    pulseSpeed: 0.5 + Math.random() * 0.5,
+                    expansionRate: expansionRate,
+                    baseRadius: baseRadius,
+                    collided: false,
+                    originalColor: {
+                        h: hue,
+                        s: saturation,
+                        l: lightness
+                    }
                 };
                 
                 civilizationsGroup.add(planet);
@@ -379,6 +426,18 @@
         function removeCivilizations() {
             // Remove each planet from its parent and dispose resources
             for (let planet of civilizationPlanets) {
+                // Also remove influence spheres
+                if (planet.userData && planet.userData.influenceSphere) {
+                    scene.remove(planet.userData.influenceSphere);
+                    if (planet.userData.influenceSphere.geometry) {
+                        planet.userData.influenceSphere.geometry.dispose();
+                    }
+                    if (planet.userData.influenceSphere.material) {
+                        planet.userData.influenceSphere.material.dispose();
+                    }
+                }
+                
+                // Remove planet
                 if (planet.parent) planet.parent.remove(planet);
                 if (planet.geometry) planet.geometry.dispose();
                 if (planet.material) planet.material.dispose();
@@ -393,6 +452,14 @@
             
             // Clear the array
             civilizationPlanets = [];
+            
+            // Reset time
+            timeValue = 0;
+            document.getElementById('time-slider').value = 0;
+            document.getElementById('time-value').textContent = '0';
+            isPlaying = false;
+            document.getElementById('play-pause').textContent = 'Play';
+            cancelAnimationFrame(animationId);
         }
         
         // Function to focus camera on Earth
@@ -664,6 +731,162 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Setup time controls
+        function setupTimeControls() {
+            const timeSlider = document.getElementById('time-slider');
+            const timeValueDisplay = document.getElementById('time-value');
+            const playPauseButton = document.getElementById('play-pause');
+            const resetButton = document.getElementById('reset-time');
+            
+            // Set initial values
+            timeValueDisplay.textContent = timeValue;
+            
+            // Time slider event
+            timeSlider.addEventListener('input', function() {
+                timeValue = parseFloat(this.value);
+                timeValueDisplay.textContent = timeValue;
+                updateSphereExpansion();
+            });
+            
+            // Play/Pause button
+            playPauseButton.addEventListener('click', function() {
+                isPlaying = !isPlaying;
+                this.textContent = isPlaying ? 'Pause' : 'Play';
+                
+                if (isPlaying) {
+                    lastUpdateTime = Date.now() * 0.001;
+                    animateTime();
+                } else {
+                    cancelAnimationFrame(animationId);
+                }
+            });
+            
+            // Reset button
+            resetButton.addEventListener('click', function() {
+                timeValue = 0;
+                timeSlider.value = timeValue;
+                timeValueDisplay.textContent = timeValue;
+                updateSphereExpansion();
+                
+                // If playing, reset but continue playing
+                if (!isPlaying) {
+                    cancelAnimationFrame(animationId);
+                }
+            });
+        }
+        
+        // Animation for time simulation
+        function animateTime() {
+            const currentTime = Date.now() * 0.001;
+            const deltaTime = currentTime - lastUpdateTime;
+            lastUpdateTime = currentTime;
+            
+            // Update time value
+            timeValue = Math.min(parseFloat(document.getElementById('time-slider').max), 
+                              timeValue + deltaTime * TIME_SPEED);
+            
+            // Update UI
+            document.getElementById('time-slider').value = timeValue;
+            document.getElementById('time-value').textContent = Math.round(timeValue);
+            
+            // Update spheres of influence
+            updateSphereExpansion();
+            
+            // If we've reached the max, stop playing
+            if (timeValue >= parseFloat(document.getElementById('time-slider').max)) {
+                isPlaying = false;
+                document.getElementById('play-pause').textContent = 'Play';
+            } else if (isPlaying) {
+                animationId = requestAnimationFrame(animateTime);
+            }
+        }
+        
+        // Update sphere expansion based on time
+        function updateSphereExpansion() {
+            // Check for collisions between civilization spheres
+            checkSpheresIntersection();
+        }
+        
+        // Check for intersections between civilization spheres
+        function checkSpheresIntersection() {
+            // Loop through all pairs of planets
+            for (let i = 0; i < civilizationPlanets.length; i++) {
+                const planetA = civilizationPlanets[i];
+                const radiusA = planetA.userData.baseRadius + (timeValue * planetA.userData.expansionRate);
+                
+                for (let j = i + 1; j < civilizationPlanets.length; j++) {
+                    const planetB = civilizationPlanets[j];
+                    const radiusB = planetB.userData.baseRadius + (timeValue * planetB.userData.expansionRate);
+                    
+                    // Calculate distance between centers
+                    const distance = planetA.position.distanceTo(planetB.position);
+                    
+                    // Check if spheres intersect
+                    if (distance < (radiusA + radiusB)) {
+                        // Spheres intersect - mark both as white
+                        if (!planetA.userData.collided || !planetB.userData.collided) {
+                            planetA.material.color.set(0xFFFFFF);
+                            planetB.material.color.set(0xFFFFFF);
+                            planetA.userData.collided = true;
+                            planetB.userData.collided = true;
+                        }
+                    } else if (timeValue === 0) {
+                        // Reset colors when time is reset to 0
+                        if (planetA.userData.collided) {
+                            planetA.material.color.setHSL(
+                                planetA.userData.originalColor.h,
+                                planetA.userData.originalColor.s,
+                                planetA.userData.originalColor.l
+                            );
+                            planetA.userData.collided = false;
+                        }
+                        if (planetB.userData.collided) {
+                            planetB.material.color.setHSL(
+                                planetB.userData.originalColor.h,
+                                planetB.userData.originalColor.s,
+                                planetB.userData.originalColor.l
+                            );
+                            planetB.userData.collided = false;
+                        }
+                    }
+                }
+                
+                // Update the sphere of influence visualization
+                updateSphereOfInfluence(planetA, radiusA);
+            }
+        }
+        
+        // Update the visualization of a sphere of influence
+        function updateSphereOfInfluence(planet, radius) {
+            // Get or create the influence sphere
+            if (!planet.userData.influenceSphere) {
+                const sphereGeometry = new THREE.SphereGeometry(1, 16, 8);
+                const sphereMaterial = new THREE.MeshBasicMaterial({
+                    color: planet.material.color.getHex(),
+                    transparent: true,
+                    opacity: 0.1,
+                    wireframe: true
+                });
+                
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.position.copy(planet.position);
+                scene.add(sphere);
+                
+                planet.userData.influenceSphere = sphere;
+            }
+            
+            // Update the sphere's scale to match the current radius
+            const sphere = planet.userData.influenceSphere;
+            sphere.scale.set(radius, radius, radius);
+            
+            // Update sphere color if planet is collided
+            if (planet.userData.collided) {
+                sphere.material.color.set(0xFFFFFF);
+            } else if (timeValue === 0) {
+                sphere.material.color.copy(planet.material.color);
+            }
         }
         
         // Animation loop
