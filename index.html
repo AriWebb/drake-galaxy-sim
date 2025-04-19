@@ -44,6 +44,59 @@
         <button id="focusGalaxy">View Entire Galaxy</button>
     </div>
     
+    <div id="drake-equation">
+        <h2>Drake Equation Calculator</h2>
+        <p>Adjust parameters to calculate potential civilizations in our galaxy</p>
+        
+        <div class="slider-container">
+            <label for="R">R* = Average rate of star formation (stars/year)</label>
+            <input type="range" id="R" min="1" max="20" value="7" step="0.1">
+            <span id="R-value">7</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="fp">fp = Fraction of stars with planets</label>
+            <input type="range" id="fp" min="0" max="1" value="0.5" step="0.01">
+            <span id="fp-value">0.5</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="ne">ne = Average habitable planets per star</label>
+            <input type="range" id="ne" min="0" max="5" value="2" step="0.1">
+            <span id="ne-value">2</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="fl">fl = Fraction of habitable planets with life</label>
+            <input type="range" id="fl" min="0" max="1" value="0.33" step="0.01">
+            <span id="fl-value">0.33</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="fi">fi = Fraction of life that develops intelligence</label>
+            <input type="range" id="fi" min="0" max="1" value="0.1" step="0.01">
+            <span id="fi-value">0.1</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="fc">fc = Fraction of intelligence that develops detectable technology</label>
+            <input type="range" id="fc" min="0" max="1" value="0.1" step="0.01">
+            <span id="fc-value">0.1</span>
+        </div>
+        
+        <div class="slider-container">
+            <label for="L">L = Longevity of detectable civilizations (years)</label>
+            <input type="range" id="L" min="1" max="10000" value="1000" step="1">
+            <span id="L-value">1000</span>
+        </div>
+        
+        <div id="result">
+            <p>N = <span id="N-value">0</span> civilizations in our galaxy</p>
+        </div>
+        
+        <button id="generate-planets">Generate Civilizations</button>
+    </div>
+    
     <style>
         button {
             background-color: #0077ff;
@@ -56,6 +109,60 @@
         }
         button:hover {
             background-color: #0055cc;
+        }
+        
+        #drake-equation {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 100;
+            font-family: Arial, sans-serif;
+        }
+        
+        h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        
+        .slider-container {
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        input[type="range"] {
+            width: 80%;
+            margin-right: 10px;
+        }
+        
+        #result {
+            margin: 15px 0;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        #generate-planets {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 1em;
+            background-color: #4CAF50;
+        }
+        
+        #generate-planets:hover {
+            background-color: #388E3C;
         }
     </style>
     
@@ -82,6 +189,10 @@
         
         // Variables to store Earth's position
         let earthX, earthY, earthZ;
+        
+        // Variables for Drake Equation
+        let civilizationPlanets = [];
+        let drakeN = 0;
         
         // Initialize the scene
         function init() {
@@ -119,9 +230,156 @@
             // Add button handlers
             document.getElementById('focusEarth').addEventListener('click', focusOnEarth);
             document.getElementById('focusGalaxy').addEventListener('click', focusOnGalaxy);
+            document.getElementById('generate-planets').addEventListener('click', generateCivilizations);
+            
+            // Add Drake equation slider handlers
+            setupDrakeEquation();
             
             // Start animation loop
             animate();
+        }
+        
+        // Setup Drake Equation sliders and calculation
+        function setupDrakeEquation() {
+            // Get all sliders
+            const sliders = ['R', 'fp', 'ne', 'fl', 'fi', 'fc', 'L'];
+            
+            // Add event listeners to update values and recalculate N
+            sliders.forEach(id => {
+                const slider = document.getElementById(id);
+                const valueSpan = document.getElementById(`${id}-value`);
+                
+                // Set initial value
+                valueSpan.textContent = slider.value;
+                
+                // Add change event listener
+                slider.addEventListener('input', function() {
+                    valueSpan.textContent = this.value;
+                    calculateDrakeEquation();
+                });
+            });
+            
+            // Initial calculation
+            calculateDrakeEquation();
+        }
+        
+        // Calculate Drake Equation: N = R* × fp × ne × fl × fi × fc × L
+        function calculateDrakeEquation() {
+            const R = parseFloat(document.getElementById('R').value);
+            const fp = parseFloat(document.getElementById('fp').value);
+            const ne = parseFloat(document.getElementById('ne').value);
+            const fl = parseFloat(document.getElementById('fl').value);
+            const fi = parseFloat(document.getElementById('fi').value);
+            const fc = parseFloat(document.getElementById('fc').value);
+            const L = parseFloat(document.getElementById('L').value);
+            
+            // Calculate N
+            drakeN = R * fp * ne * fl * fi * fc * L;
+            
+            // Update display
+            document.getElementById('N-value').textContent = Math.round(drakeN);
+        }
+        
+        // Generate civilizations based on Drake equation result
+        function generateCivilizations() {
+            // Remove any existing civilization planets
+            removeCivilizations();
+            
+            // Calculate how many planets to generate
+            let numPlanets = Math.round(drakeN);
+            
+            // Cap the number of planets to avoid performance issues
+            const maxPlanets = 1000;
+            const scaleFactor = numPlanets > maxPlanets ? numPlanets / maxPlanets : 1;
+            numPlanets = Math.min(numPlanets, maxPlanets);
+            
+            if (numPlanets <= 0) {
+                alert('Based on current parameters, there are no detectable civilizations in the galaxy.');
+                return;
+            }
+            
+            // Create a group for civilization planets
+            const civilizationsGroup = new THREE.Group();
+            scene.add(civilizationsGroup);
+            
+            // Generate random planets throughout the galaxy
+            for (let i = 0; i < numPlanets; i++) {
+                // Determine if planet is in core or in spiral arms (similar logic as stars)
+                const isCore = Math.random() < 0.2; // Less likely in core
+                
+                let x, y, z;
+                
+                if (isCore) {
+                    // Planets in galactic core
+                    const r = Math.random() * coreRadius * 0.8;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = (Math.random() - 0.5) * 0.3 * Math.PI;
+                    
+                    x = r * Math.cos(theta) * Math.cos(phi);
+                    y = r * Math.sin(phi);
+                    z = r * Math.sin(theta) * Math.cos(phi);
+                } else {
+                    // Planets in spiral arms
+                    const arm = Math.floor(Math.random() * 5); // 5 spiral arms
+                    const angle = (Math.PI * 2 * arm / 5) + (Math.random() * 0.5);
+                    const distance = coreRadius + Math.random() * (galaxyRadius - coreRadius) * 0.9;
+                    const spiralFactor = 4.0;
+                    
+                    const theta = angle + (distance / galaxyRadius) * spiralFactor;
+                    
+                    x = distance * Math.cos(theta);
+                    z = distance * Math.sin(theta);
+                    
+                    // Add some randomness to spiral
+                    x += (Math.random() - 0.5) * distance * 0.2;
+                    z += (Math.random() - 0.5) * distance * 0.2;
+                    
+                    // Y-position (height) drops off with distance from center
+                    const heightFactor = 1 - (distance / galaxyRadius) * 0.8;
+                    y = (Math.random() - 0.5) * galaxyHeight * heightFactor * 0.5;
+                }
+                
+                // Create the planet
+                const planetGeometry = new THREE.SphereGeometry(15 + Math.random() * 15, 16, 16);
+                
+                // Choose a random color for the civilization (green-ish to indicate life)
+                const hue = 0.3 + Math.random() * 0.3; // Greenish hue
+                const planetColor = new THREE.Color().setHSL(hue, 0.8, 0.5);
+                
+                const planetMaterial = new THREE.MeshBasicMaterial({
+                    color: planetColor,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+                planet.position.set(x, y, z);
+                
+                // Add a pulsing effect to make civilizations noticeable
+                planet.userData = {
+                    initialScale: 1,
+                    pulsePhase: Math.random() * Math.PI * 2,
+                    pulseSpeed: 0.5 + Math.random() * 0.5
+                };
+                
+                civilizationsGroup.add(planet);
+                civilizationPlanets.push(planet);
+            }
+            
+            // Update info about scaling
+            if (scaleFactor > 1) {
+                alert(`Showing ${numPlanets} of approximately ${Math.round(drakeN)} civilizations to maintain performance.`);
+            }
+        }
+        
+        // Remove all civilization planets
+        function removeCivilizations() {
+            for (let planet of civilizationPlanets) {
+                scene.remove(planet);
+                if (planet.geometry) planet.geometry.dispose();
+                if (planet.material) planet.material.dispose();
+            }
+            civilizationPlanets = [];
         }
         
         // Function to focus camera on Earth
@@ -399,6 +657,19 @@
         function animate() {
             requestAnimationFrame(animate);
             controls.update(); // required if controls.enableDamping = true
+            
+            // Animate civilization planets (pulsing effect)
+            const time = Date.now() * 0.001; // Current time in seconds
+            
+            for (let planet of civilizationPlanets) {
+                const userData = planet.userData;
+                if (userData) {
+                    // Calculate pulse effect
+                    const pulse = 0.2 * Math.sin(time * userData.pulseSpeed + userData.pulsePhase) + 1;
+                    planet.scale.set(pulse, pulse, pulse);
+                }
+            }
+            
             renderer.render(scene, camera);
         }
         
