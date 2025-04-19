@@ -400,6 +400,9 @@
                 
                 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
                 planet.position.set(x, y, z);
+              
+                // Assign random expansion start time
+                const expansionStart = Math.random() * 100; // Random start time between 0 and 100
                 
                 // Assign random expansion rate with wider range (units of distance per time unit)
                 // Some civilizations expand very slowly, others very quickly
@@ -414,6 +417,7 @@
                     initialScale: 1,
                     pulsePhase: Math.random() * Math.PI * 2,
                     pulseSpeed: 0.5 + Math.random() * 0.5,
+                    expansionStart: expansionRate,
                     expansionRate: expansionRate,
                     baseRadius: baseRadius,
                     collided: false,
@@ -820,51 +824,60 @@
             // Check for collisions between civilization spheres
             checkSpheresIntersection();
         }
-        
-        // Check for intersections between civilization spheres
+       
         function checkSpheresIntersection() {
-            // Reset all planets if time is 0
-            if (timeValue === 0) {
-                for (let planet of civilizationPlanets) {
-                    if (planet.userData.collided) {
-                        planet.material.color.setHSL(
-                            planet.userData.originalColor.h,
-                            planet.userData.originalColor.s,
-                            planet.userData.originalColor.l
-                        );
-                        planet.userData.collided = false;
-                    }
-                }
-            }
-            
-            // Loop through all pairs of planets
-            for (let i = 0; i < civilizationPlanets.length; i++) {
-                const planetA = civilizationPlanets[i];
-                const radiusA = planetA.userData.baseRadius + (timeValue * planetA.userData.expansionRate);
-                
-                for (let j = i + 1; j < civilizationPlanets.length; j++) {
-                    const planetB = civilizationPlanets[j];
-                    const radiusB = planetB.userData.baseRadius + (timeValue * planetB.userData.expansionRate);
-                    
-                    // Calculate distance between centers
-                    const distance = planetA.position.distanceTo(planetB.position);
-                    
-                    // Check if spheres intersect
-                    if (distance < (radiusA + radiusB)) {
-                        // Spheres intersect - mark both as white
-                        if (!planetA.userData.collided || !planetB.userData.collided) {
-                            planetA.material.color.set(0xFFFFFF);
-                            planetB.material.color.set(0xFFFFFF);
-                            planetA.userData.collided = true;
-                            planetB.userData.collided = true;
-                        }
-                    }
-                }
-                
-                // Update the sphere of influence visualization
-                updateSphereOfInfluence(planetA, radiusA);
+    // Reset all planets if time is 0
+    if (timeValue === 0) {
+        for (let planet of civilizationPlanets) {
+            if (planet.userData.collided) {
+                planet.material.color.setHSL(
+                    planet.userData.originalColor.h,
+                    planet.userData.originalColor.s,
+                    planet.userData.originalColor.l
+                );
+                planet.userData.collided = false;
             }
         }
+    }
+
+    // Loop through all pairs of planets
+    for (let i = 0; i < civilizationPlanets.length; i++) {
+        const planetA = civilizationPlanets[i];
+        const timeSinceStartA = timeValue - planetA.userData.expansionStart;
+
+        // Skip if planetA's expansion hasn't started
+        if (timeSinceStartA < 0) continue;
+
+        const radiusA = planetA.userData.baseRadius + (timeSinceStartA * planetA.userData.expansionRate);
+
+        for (let j = i + 1; j < civilizationPlanets.length; j++) {
+            const planetB = civilizationPlanets[j];
+            const timeSinceStartB = timeValue - planetB.userData.expansionStart;
+
+            // Skip if planetB's expansion hasn't started
+            if (timeSinceStartB < 0) continue;
+
+            const radiusB = planetB.userData.baseRadius + (timeSinceStartB * planetB.userData.expansionRate);
+
+            // Calculate distance between centers
+            const distance = planetA.position.distanceTo(planetB.position);
+
+            // Check if spheres intersect
+            if (distance < (radiusA + radiusB)) {
+                // Spheres intersect - mark both as white
+                if (!planetA.userData.collided || !planetB.userData.collided) {
+                    planetA.material.color.set(0xFFFFFF);
+                    planetB.material.color.set(0xFFFFFF);
+                    planetA.userData.collided = true;
+                    planetB.userData.collided = true;
+                }
+            }
+        }
+
+        // Update the sphere of influence visualization
+        updateSphereOfInfluence(planetA, radiusA);
+    }
+}
         
         // Update the visualization of a sphere of influence
         function updateSphereOfInfluence(planet, radius) {
@@ -892,7 +905,7 @@
             
             // Update sphere color if planet is collided
             if (planet.userData.collided) {
-                sphere.material.color.set(0xFFFFFF);
+                //sphere.material.color.set(0xFFFFFF);
             } else if (timeValue === 0) {
                 sphere.material.color.copy(planet.material.color);
             }
