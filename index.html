@@ -300,12 +300,13 @@
             
             // Create a group for civilization planets
             const civilizationsGroup = new THREE.Group();
+            civilizationsGroup.userData = { isCivilizationsGroup: true };
             scene.add(civilizationsGroup);
             
             // Generate random planets throughout the galaxy
             for (let i = 0; i < numPlanets; i++) {
                 // Determine if planet is in core or in spiral arms (similar logic as stars)
-                const isCore = Math.random() < 0.2; // Less likely in core
+                const isCore = Math.random() < 0.1; // Less likely in core
                 
                 let x, y, z;
                 
@@ -342,9 +343,11 @@
                 // Create the planet
                 const planetGeometry = new THREE.SphereGeometry(15 + Math.random() * 15, 16, 16);
                 
-                // Choose a random color for the civilization (green-ish to indicate life)
-                const hue = 0.3 + Math.random() * 0.3; // Greenish hue
-                const planetColor = new THREE.Color().setHSL(hue, 0.8, 0.5);
+                // Choose a fully random color for each civilization
+                const hue = Math.random(); // Random hue across the full spectrum
+                const saturation = 0.7 + Math.random() * 0.3; // High saturation
+                const lightness = 0.4 + Math.random() * 0.3; // Medium to bright
+                const planetColor = new THREE.Color().setHSL(hue, saturation, lightness);
                 
                 const planetMaterial = new THREE.MeshBasicMaterial({
                     color: planetColor,
@@ -374,11 +377,21 @@
         
         // Remove all civilization planets
         function removeCivilizations() {
+            // Remove each planet from its parent and dispose resources
             for (let planet of civilizationPlanets) {
-                scene.remove(planet);
+                if (planet.parent) planet.parent.remove(planet);
                 if (planet.geometry) planet.geometry.dispose();
                 if (planet.material) planet.material.dispose();
             }
+            
+            // Find and remove any civilization groups from the scene
+            scene.children.forEach(child => {
+                if (child.isGroup && child.userData && child.userData.isCivilizationsGroup) {
+                    scene.remove(child);
+                }
+            });
+            
+            // Clear the array
             civilizationPlanets = [];
         }
         

@@ -1,0 +1,16 @@
+I used Claude Code
+
+
+1. gernerate a three js visualization. let me put it in my browser. the visualization should be of the stars in the milky way galaxy. each star can be represented as a dot. let the user scroll around the       │
+│   galaxy to see the spatial relationships between each node
+2. when I go to the webpage, I don't see anything. its just a black screen with the milky way text in the upper left corner
+3. put earth in the galaxy
+4. now make a slider/button for each of these features from drakes equation: R∗ = the average rate of star formation in our Galaxy.                                                                               │
+│   fp = the fraction of those stars that have planets.                                                                                                                                                            │
+│   ne = the average number of planets that can potentially support life per star that has planets.                                                                                                                │
+│   fl = the fraction of planets that could support life that actually develop life at some point.                                                                                                                 │
+│   fi = the fraction of planets with life that go on to develop intelligent life (civilizations).                                                                                                                 │
+│   fc = the fraction of civilizations that develop a technology that releases detectable signs of their existence into space.                                                                                     │
+│   L = the length of time for which such civilizations release detectable signals into space.[6][7] the product of all of these is N. once the user submits their values for this, there should be N new planets  │
+│   in the simulation distributed uniformly throughout the milky way. if N is too big, we can just make, say, N / 10 or N /100 planets so our three js sim can still run
+5. 
