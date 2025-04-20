@@ -8,39 +8,61 @@ An interactive 3D visualization of the Drake equation, simulating the potential 
 - **Drake Equation Calculator**: Adjust parameters to estimate the number of detectable civilizations
 - **Civilization Generation**: Visualize potential civilizations based on Drake equation results
 - **Expansion Simulation**: Watch civilizations expand their spheres of influence over time
-- **Collision Detection**: See what happens when expanding civilizations encounter each other
+- **Dynamic Interactions**: Civilizations can conquer, be conquered, or merge based on their relative strengths
+
+## Civilization Mechanics
+
+Each civilization is characterized by:
+- **Tech Advancement Rate**: (0-1) Influences their strength in encounters
+- **Aggressiveness Factor**: (0-1) Affects their ability to dominate other civilizations
+- **Expansion Rate**: Determines how quickly their sphere of influence grows
+- **Sphere of Influence**: Visualized as a transparent sphere around their core world
+
+### Strength Calculation
+The strength of a civilization is determined by the following equation:
+
+```
+Strength = (Tech × 0.6) + (Aggression × 0.4)
+```
+
+Where:
+- Tech: Technology advancement rate (0-1)
+- Aggression: Aggressiveness factor (0-1)
+- Tech is weighted at 60% of the total strength
+- Aggression is weighted at 40% of the total strength
+
+When civilizations interact:
+- If Strength_A > Strength_B: Civilization A conquers B
+- If Strength_B > Strength_A: Civilization B conquers A
+- If Strength_A = Strength_B: Civilizations merge
+
+## Metrics Tracked
+- **Earth Encounters**: Number of civilizations that have reached Earth
+- **Dominant Civilization**: Shows which civilization has conquered the most unique other civilizations
 
 ## How to Use
 
 1. **Navigation**: Use mouse to rotate, scroll to zoom, and right-click drag to pan
 2. **View Controls**: Focus on Earth or view the entire galaxy using the buttons
-3. **Drake Equation**: Adjust sliders to modify equation parameters
+3. **Drake Equation**: Adjust sliders to modify equation parameters:
+   - R* = Average rate of star formation (stars/year)
+   - fp = Fraction of stars with planets
+   - ne = Average habitable planets per star
+   - fl = Fraction of habitable planets with life
+   - fi = Fraction of life that develops intelligence
+   - fc = Fraction of intelligence that develops detectable technology
+   - L = Longevity of detectable civilizations (years)
 4. **Generate Civilizations**: Click the button to create civilizations based on your parameters
-5. **Time Simulation**: Use the slider to move forward/backward in time, or play/pause to animate
-6. **Expansion Visualization**: Watch how different civilizations expand at varied rates
-
-## Drake Equation Parameters
-
-The Drake equation estimates the number of active, communicative extraterrestrial civilizations in our Milky Way galaxy:
-
-N = R* × fp × ne × fl × fi × fc × L
-
-Where:
-- R* = Average rate of star formation (stars/year)
-- fp = Fraction of stars with planets
-- ne = Average habitable planets per star
-- fl = Fraction of habitable planets with life
-- fi = Fraction of life that develops intelligence
-- fc = Fraction of intelligence that develops detectable technology
-- L = Longevity of detectable civilizations (years)
+5. **Time Control**: Use the slider or play/pause button to control simulation progression
+6. **Reset**: Return all civilizations to their original state
 
 ## Simulation Details
 
-- Each civilization is assigned a random expansion rate
-- Spheres of influence grow at these different rates
-- When two spheres intersect, both civilizations are marked in white
-- Time slider allows exploration of various expansion scenarios
-- Play/pause functionality for automatic simulation
+- Each civilization starts with a random tech level and aggressiveness factor
+- Spheres of influence expand at different rates based on civilization parameters
+- Conquests are determined by comparing tech levels and aggressiveness
+- Color mixing reflects the history of conquests and mergers
+- Time controls allow exploration of different expansion scenarios
 
 ## Technologies Used
 
