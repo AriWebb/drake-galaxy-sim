@@ -102,7 +102,7 @@
             <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
             <div class="metrics">
                 <div>Earth Encounters: <span id="earth-encounters">0</span></div>
-                <div>Most Conquests: <span id="top-conqueror">None (0)</span></div>
+                <div id="top-conqueror">No conquests yet</div>
             </div>
             <div class="time-buttons">
                 <button id="play-pause">Play</button>
@@ -209,6 +209,10 @@
         }
         .metrics div {
             margin: 5px 0;
+        }
+        #top-conqueror {
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-weight: bold;
         }
     </style>
     
@@ -1116,20 +1120,37 @@
             let maxConquests = 0;
             let topConqueror = 'None';
             let topConquerorColor = '#FFFFFF';
+            let topConquerorId = '';
+            let topConquerorAggression = 0;
+            let topConquerorTech = 0;
             
             civilizationConquests.forEach((data, id) => {
                 const uniqueConquests = data.conqueredCivs.size;
                 if (uniqueConquests > maxConquests) {
                     maxConquests = uniqueConquests;
-                    topConqueror = `Civ ${id.substring(0, 4)}`;
+                    topConquerorId = id;
+                    // Find the civilization's index
+                    const civIndex = civilizationPlanets.findIndex(c => c.userData.civilizationId === id);
+                    topConqueror = `Civ_${civIndex + 1}`; // Adding 1 to make it 1-based instead of 0-based
                     topConquerorColor = data.color;
+                    // Find the civilization's scores
+                    const civ = civilizationPlanets[civIndex];
+                    if (civ) {
+                        topConquerorAggression = civ.userData.aggressivenessFactor.toFixed(2);
+                        topConquerorTech = civ.userData.techAdvancementRate.toFixed(2);
+                    }
                 }
             });
             
             // Update display to show number of unique civilizations conquered
             const topConquerorElement = document.getElementById('top-conqueror');
-            topConquerorElement.innerHTML = 
-                `<span style="color: ${topConquerorColor}">${topConqueror}</span> (${maxConquests} civs)`;
+            if (maxConquests > 0) {
+                topConquerorElement.style.color = topConquerorColor;
+                topConquerorElement.textContent = `${topConqueror} (Aggr: ${topConquerorAggression}, Tech: ${topConquerorTech}) has conquered ${maxConquests} civilizations`;
+            } else {
+                topConquerorElement.style.color = '#FFFFFF';
+                topConquerorElement.textContent = 'No conquests yet';
+            }
         }
         
         // Start the visualization
