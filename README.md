@@ -31,7 +31,7 @@ Civilization touchpoints are checked continuously during expansion:
 
 ## Metrics Tracked
 - **Earth Encounters**: Number of civilizations that have reached Earth
-- **Dominant Civilization**: Shows which civilization has conquered the most unique other civilizations
+- **Dominant Civilization**: Shows which civilization has absorbed the most unique other civilizations
 
 ## How to Use
 
@@ -54,7 +54,7 @@ Civilization touchpoints are checked continuously during expansion:
 - Each civilization starts with a random technology level and aggressiveness factor
 - Spheres of influence expand at different rates based on civilization parameters
 - Takeovers are determined by comparing tech levels and aggressiveness
-- Color mixing reflects the history of conquests and mergers
+- Color mixing reflects the history of mergers
 - Time controls allow exploration of different expansion scenarios
 
 ## Technologies Used
