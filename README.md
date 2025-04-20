@@ -26,23 +26,8 @@ Civilizations have three possible expansion/tech categories:
 
 This linking of expansion and technology represents how a civilization's ability to expand is directly related to their technological advancement.
 
-### Combat Resolution
-Civilization conflicts are checked continuously during expansion:
-
-**Overwhelming Superiority**:
-- Every time a civilization's sphere of influence reaches another civilization's planet, conquest is possible if:
-  - Aggression ≥ 0.9 AND
-  - Expansion/Tech rate ≥ 2× opponent's rate
-- Conquest checks occur continuously as spheres expand
-- Each civilization can attempt conquest multiple times as their sphere grows
-- Only overwhelming technological and aggressive superiority results in conquest
-
-This system represents:
-- Direct correlation between expansion capability and technological advancement
-- Faster expanding civilizations are inherently more technologically advanced
-- Continuous pressure from expanding civilizations
-- The importance of maintaining technological superiority
-- The role of high aggression in successful conquest
+### Civilization touchpoints
+Civilization touchpoints are checked continuously during expansion:
 
 ## Metrics Tracked
 - **Earth Encounters**: Number of civilizations that have reached Earth
@@ -68,7 +53,7 @@ This system represents:
 
 - Each civilization starts with a random tech level and aggressiveness factor
 - Spheres of influence expand at different rates based on civilization parameters
-- Conquests are determined by comparing tech levels and aggressiveness
+- Takeovers are determined by comparing tech levels and aggressiveness
 - Color mixing reflects the history of conquests and mergers
 - Time controls allow exploration of different expansion scenarios
 
