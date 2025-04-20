@@ -96,20 +96,27 @@
         </div>
         
         <button id="generate-planets">Generate Civilizations</button>
-        
+        <br> <!-- Add a line break here -->
+
+        <div class="slider-container">
+            <label for="aggression-threshold">Aggression Threshold (0-1)</label>
+            <input type="range" id="aggression-threshold" min="0" max="1" value="0.9" step="0.01">
+            <span id="aggression-threshold-value">0.9</span>
+        </div>
         <div class="time-control">
             <label for="time-slider">Time: <span id="time-value">0</span></label>
-            <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
-            <div class="metrics">
-                <div>Earth Encounters: <span id="earth-encounters">0</span></div>
-                <div id="top-conqueror">No conquests yet</div>
-            </div>
+            <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">            
             <div class="time-buttons">
                 <button id="play-pause">Play</button>
                 <button id="reset-time">Reset</button>
             </div>
         </div>
-    </div>
+
+        <div class="metrics">
+            <div>Earth Encounters: <span id="earth-encounters">0</span></div>
+            <div id="top-conqueror">No conquests yet</div>
+        </div>
+</div>
     
     
     <style>
@@ -183,7 +190,6 @@
         .time-control {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
         }
         
@@ -254,6 +260,7 @@
         // Add these variables at the top level with other global variables
         let earthEncounters = 0;
         let civilizationConquests = new Map(); // Track conquests for each civilization
+        let aggressionThreshold = 0.9; // Default aggression threshold
         
         // Initialize the scene
         function init() {
@@ -298,6 +305,9 @@
             
             // Add time slider handlers
             setupTimeControls();
+            
+            // Add aggression threshold slider handler
+            setupAggressionThresholdSlider();
             
             // Start animation loop
             animate();
@@ -929,6 +939,7 @@
         // Update sphere expansion based on time
         function updateSphereExpansion() {
             if (timeValue === 0) {
+                // Only reset if we haven't already reset
                 if (!window.hasReset) {
                     resetSimulation();
                     window.hasReset = true;
@@ -952,17 +963,17 @@
 
                 for (let j = 0; j < civilizationPlanets.length; j++) {
                     if (i === j) continue;
-
+                    
                     const planetB = civilizationPlanets[j];
                     const distance = planetA.position.distanceTo(planetB.position);
 
                     // Check for sphere intersection with planet
                     if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
                         // Check for overwhelming superiority conditions
-                        const aHighlyAggressiveAndAdvanced =
-                            planetA.userData.aggressivenessFactor >= 0.9 &&
+                        const aHighlyAggressiveAndAdvanced = 
+                            planetA.userData.aggressivenessFactor >= aggressionThreshold && 
                             planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
-
+                        
                         if (aHighlyAggressiveAndAdvanced) {
                             // A dominates through superior tech and high aggression
                             applyDominantColor(planetA, planetB, 1);
@@ -970,21 +981,8 @@
                             planetB.userData.conqueredCivs.forEach(civ => {
                                 planetA.userData.conqueredCivs.add(civ);
                             });
-                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs =
+                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
                                 new Set([...planetA.userData.conqueredCivs]);
-
-                            // Remove the influence sphere of the conquered planet
-                            if (planetB.userData.influenceSphere) {
-                                scene.remove(planetB.userData.influenceSphere);
-                                if (planetB.userData.influenceSphere.geometry) {
-                                    planetB.userData.influenceSphere.geometry.dispose();
-                                }
-                                if (planetB.userData.influenceSphere.material) {
-                                    planetB.userData.influenceSphere.material.dispose();
-                                }
-                                planetB.userData.influenceSphere = null; // Clear reference
-                            }
-
                             updateMetricsDisplay();
                         }
                     }
@@ -1001,7 +999,7 @@
             const techB = planetB.userData.techAdvancementRate;
             
             // Check for highly aggressive civilizations with superior technology
-            if (aggressionA >= 0.9 && techA >= techB * 2) {
+            if (aggressionA >= aggressionThreshold && techA >= techB * 2) {
                 return 1; // Automatic win for A
             }
             
@@ -1155,11 +1153,26 @@
             const topConquerorElement = document.getElementById('top-conqueror');
             if (maxConquests > 0) {
                 topConquerorElement.style.color = topConquerorColor;
-                topConquerorElement.textContent = `${topConqueror} (Aggr: ${topConquerorAggression}, Tech: ${topConquerorTech}) has taken over ${maxConquests} civilizations`;
+                topConquerorElement.textContent = `${topConqueror} (Aggr: ${topConquerorAggression}, Tech: ${topConquerorTech}) has absorbed ${maxConquests} civilizations`;
             } else {
                 topConquerorElement.style.color = '#FFFFFF';
                 topConquerorElement.textContent = 'No takeovers yet';
             }
+        }
+        
+        // Setup aggression threshold slider
+        function setupAggressionThresholdSlider() {
+            const aggressionSlider = document.getElementById('aggression-threshold');
+            const aggressionValueDisplay = document.getElementById('aggression-threshold-value');
+
+            // Set initial value
+            aggressionValueDisplay.textContent = aggressionSlider.value;
+
+            // Add event listener to update the aggression threshold
+            aggressionSlider.addEventListener('input', function () {
+                aggressionThreshold = parseFloat(this.value); // Update global variable
+                aggressionValueDisplay.textContent = this.value;
+            });
         }
         
         // Start the visualization
