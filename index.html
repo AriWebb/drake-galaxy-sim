@@ -970,16 +970,12 @@
 
                     // Check if sphereA has reached planetB's core
                     if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
-                        // Calculate strengths using the new comparison method
-                        const strengthA = calculateCivilizationStrength(planetA, planetB);
-                        const strengthB = calculateCivilizationStrength(planetB, planetA);
-
                         const interactionKey = `${Math.min(i, j)}-${Math.max(i, j)}`;
 
                         if (!planetA.userData.interactions.has(interactionKey) && 
                             !planetB.userData.interactions.has(interactionKey)) {
                             
-                            // Determine if either civilization meets the special condition
+                            // Check for overwhelming superiority conditions
                             const aHighlyAggressiveAndAdvanced = 
                                 planetA.userData.aggressivenessFactor >= 0.9 && 
                                 planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
@@ -997,6 +993,7 @@
                                 });
                                 civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
                                     new Set([...planetA.userData.conqueredCivs]);
+                                updateMetricsDisplay();
                             } else if (bHighlyAggressiveAndAdvanced) {
                                 // B dominates through superior tech and high aggression
                                 applyDominantColor(planetB, planetA, 1);
@@ -1006,45 +1003,13 @@
                                 });
                                 civilizationConquests.get(planetB.userData.civilizationId).conqueredCivs = 
                                     new Set([...planetB.userData.conqueredCivs]);
-                            } else if (strengthA > strengthB) {
-                                // Normal strength comparison if no special conditions met
-                                applyDominantColor(planetA, planetB, strengthA);
-                                planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
-                                planetB.userData.conqueredCivs.forEach(civ => {
-                                    planetA.userData.conqueredCivs.add(civ);
-                                });
-                                civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
-                                    new Set([...planetA.userData.conqueredCivs]);
-                            } else if (strengthB > strengthA) {
-                                applyDominantColor(planetB, planetA, strengthB);
-                                planetB.userData.conqueredCivs.add(planetA.userData.civilizationId);
-                                planetA.userData.conqueredCivs.forEach(civ => {
-                                    planetB.userData.conqueredCivs.add(civ);
-                                });
-                                civilizationConquests.get(planetB.userData.civilizationId).conqueredCivs = 
-                                    new Set([...planetB.userData.conqueredCivs]);
-                            } else {
-                                // Equal strength - merge civilizations
-                                mergeCivilizations(planetA, planetB);
-                                const combinedConquests = new Set([
-                                    ...planetA.userData.conqueredCivs,
-                                    ...planetB.userData.conqueredCivs,
-                                    planetB.userData.civilizationId
-                                ]);
-                                planetA.userData.conqueredCivs = combinedConquests;
-                                planetB.userData.conqueredCivs = combinedConquests;
-                                civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
-                                    new Set([...combinedConquests]);
-                                civilizationConquests.get(planetB.userData.civilizationId).conqueredCivs = 
-                                    new Set([...combinedConquests]);
+                                updateMetricsDisplay();
                             }
+                            // No else condition - civilizations remain unchanged if no overwhelming superiority
 
                             // Mark interaction as processed
                             planetA.userData.interactions.add(interactionKey);
                             planetB.userData.interactions.add(interactionKey);
-                            
-                            // Update metrics after each conquest
-                            updateMetricsDisplay();
                         }
                     }
                 }

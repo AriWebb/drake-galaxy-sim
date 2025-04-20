@@ -19,20 +19,17 @@ Each civilization is characterized by:
 - **Sphere of Influence**: Visualized as a transparent sphere around their core world
 
 ### Combat Resolution
-Victory in civilization conflicts is determined by two possible conditions:
+Civilization conflicts are resolved through a single condition:
 
-1. **Overwhelming Superiority**:
-   - If a civilization has:
-     - Aggressiveness ≥ 0.9 AND
-     - Technology level ≥ 2× opponent's technology
-   - Then it automatically wins the conflict
+**Overwhelming Superiority**:
+- A civilization can only conquer another if it has:
+  - Aggressiveness ≥ 0.9 AND
+  - Technology level ≥ 2× opponent's technology
+- If these conditions are met, the superior civilization conquers the other
+- If these conditions are not met, both civilizations remain independent
+- No mergers or partial conquests occur
 
-2. **Standard Combat** (if overwhelming superiority is not achieved):
-   - Strength = (Tech × 0.6) + (Aggression × 0.4)
-   - Higher strength score wins
-   - Equal strength results in merger
-
-This system represents how highly aggressive, technologically superior civilizations can dominate less advanced ones, regardless of other factors.
+This represents how only highly aggressive, technologically superior civilizations can successfully conquer others, while most civilization encounters result in continued independence.
 
 ## Metrics Tracked
 - **Earth Encounters**: Number of civilizations that have reached Earth
