@@ -100,12 +100,17 @@
         <div class="time-control">
             <label for="time-slider">Time: <span id="time-value">0</span></label>
             <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
+            <div class="metrics">
+                <div>Earth Encounters: <span id="earth-encounters">0</span></div>
+                <div>Most Conquests: <span id="top-conqueror">None (0)</span></div>
+            </div>
             <div class="time-buttons">
                 <button id="play-pause">Play</button>
                 <button id="reset-time">Reset</button>
             </div>
         </div>
     </div>
+    
     
     <style>
         button {
@@ -196,6 +201,15 @@
         #play-pause, #reset-time {
             flex: 1;
         }
+        
+        .metrics {
+            margin: 10px 0;
+            color: white;
+            font-size: 0.9em;
+        }
+        .metrics div {
+            margin: 5px 0;
+        }
     </style>
     
     <script type="importmap">
@@ -232,6 +246,10 @@
         let animationId = null;
         let lastUpdateTime = 0;
         const TIME_SPEED = 3.0; // Time units per second (increased for faster playback)
+        
+        // Add these variables at the top level with other global variables
+        let earthEncounters = 0;
+        let civilizationConquests = new Map(); // Track conquests for each civilization
         
         // Initialize the scene
         function init() {
@@ -324,6 +342,10 @@
         
         // Generate civilizations based on Drake equation result
         function generateCivilizations() {
+            // Reset metrics when generating new civilizations
+            earthEncounters = 0;
+            civilizationConquests.clear();
+            
             // Remove any existing civilization planets
             removeCivilizations();
             
@@ -400,6 +422,9 @@
                 
                 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
                 planet.position.set(x, y, z);
+              
+                // Assign random expansion start time
+                const expansionStart = Math.random() * 100; // Random start time between 0 and 100
                 
                 // Assign random expansion rate with wider range (units of distance per time unit)
                 // Some civilizations expand very slowly, others very quickly
@@ -414,6 +439,7 @@
                     initialScale: 1,
                     pulsePhase: Math.random() * Math.PI * 2,
                     pulseSpeed: 0.5 + Math.random() * 0.5,
+                    expansionStart: expansionStart,
                     expansionRate: expansionRate,
                     baseRadius: baseRadius,
                     collided: false,
@@ -421,8 +447,18 @@
                         h: hue,
                         s: saturation,
                         l: lightness
-                    }
+                    },
+                    techAdvancementRate: Math.random(), // 0-1, higher means more advanced
+                    aggressivenessFactor: Math.random(), // 0-1, higher means more aggressive
+                    civilizationStrength: 0, // Will be calculated during collision
+                    civilizationId: `civ_${Math.random().toString(36).substr(2, 9)}`,
+                    conquests: 0
                 };
+                
+                civilizationConquests.set(planet.userData.civilizationId, {
+                    conquests: 0,
+                    color: `hsl(${hue * 360}, ${saturation * 100}%, ${lightness * 100}%)`
+                });
                 
                 civilizationsGroup.add(planet);
                 civilizationPlanets.push(planet);
@@ -432,6 +468,8 @@
             if (scaleFactor > 1) {
                 alert(`Showing ${numPlanets} of approximately ${Math.round(drakeN)} civilizations to maintain performance.`);
             }
+            
+            updateMetricsDisplay();
         }
         
         // Remove all civilization planets
@@ -820,53 +858,178 @@
             // Check for collisions between civilization spheres
             checkSpheresIntersection();
         }
-        
-        // Check for intersections between civilization spheres
+       
         function checkSpheresIntersection() {
-            // Reset all planets if time is 0
             if (timeValue === 0) {
-                for (let planet of civilizationPlanets) {
-                    if (planet.userData.collided) {
-                        planet.material.color.setHSL(
-                            planet.userData.originalColor.h,
-                            planet.userData.originalColor.s,
-                            planet.userData.originalColor.l
-                        );
-                        planet.userData.collided = false;
-                    }
-                }
+                // Reset metrics when time is reset
+                earthEncounters = 0;
+                civilizationConquests.clear();
+                civilizationPlanets.forEach(planet => {
+                    // Reset Earth encounter flag only
+                    planet.userData.encounteredEarth = false;
+                    // Reset color to original
+                    planet.material.color.setHSL(
+                        planet.userData.originalColor.h,
+                        planet.userData.originalColor.s,
+                        planet.userData.originalColor.l
+                    );
+                    civilizationConquests.set(planet.userData.civilizationId, {
+                        conquests: 0,
+                        color: `hsl(${planet.userData.originalColor.h * 360}, 
+                                  ${planet.userData.originalColor.s * 100}%, 
+                                  ${planet.userData.originalColor.l * 100}%)`
+                    });
+                });
+                updateMetricsDisplay();
             }
-            
-            // Loop through all pairs of planets
+
             for (let i = 0; i < civilizationPlanets.length; i++) {
                 const planetA = civilizationPlanets[i];
-                const radiusA = planetA.userData.baseRadius + (timeValue * planetA.userData.expansionRate);
-                
-                for (let j = i + 1; j < civilizationPlanets.length; j++) {
+                const timeSinceStartA = timeValue - planetA.userData.expansionStart;
+                if (timeSinceStartA < 0) continue;
+
+                const sphereRadiusA = planetA.userData.baseRadius + (timeSinceStartA * planetA.userData.expansionRate);
+
+                // Check for Earth intersection
+                const distanceToEarth = planetA.position.distanceTo(new THREE.Vector3(earthX, earthY, earthZ));
+                if (distanceToEarth < (sphereRadiusA + 30) && !planetA.userData.encounteredEarth) { // 30 is Earth's radius
+                    earthEncounters++;
+                    planetA.userData.encounteredEarth = true;
+                    updateMetricsDisplay();
+                }
+
+                for (let j = 0; j < civilizationPlanets.length; j++) {
+                    if (i === j) continue;
+                    
                     const planetB = civilizationPlanets[j];
-                    const radiusB = planetB.userData.baseRadius + (timeValue * planetB.userData.expansionRate);
-                    
-                    // Calculate distance between centers
                     const distance = planetA.position.distanceTo(planetB.position);
-                    
-                    // Check if spheres intersect
-                    if (distance < (radiusA + radiusB)) {
-                        // Spheres intersect - mark both as white
-                        if (!planetA.userData.collided || !planetB.userData.collided) {
-                            planetA.material.color.set(0xFFFFFF);
-                            planetB.material.color.set(0xFFFFFF);
-                            planetA.userData.collided = true;
-                            planetB.userData.collided = true;
+
+                    // Check if sphereA has reached planetB's core
+                    if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
+                        const strengthA = calculateCivilizationStrength(planetA);
+                        const strengthB = calculateCivilizationStrength(planetB);
+
+                        // Track this specific interaction to avoid double counting
+                        const interactionKey = `${Math.min(i, j)}-${Math.max(i, j)}`;
+                        if (!planetA.userData.interactions) planetA.userData.interactions = new Set();
+                        if (!planetB.userData.interactions) planetB.userData.interactions = new Set();
+
+                        // Only process if this specific pair hasn't interacted at this time step
+                        if (!planetA.userData.interactions.has(interactionKey) && 
+                            !planetB.userData.interactions.has(interactionKey)) {
+                            
+                            if (strengthA > strengthB) {
+                                // Civilization A conquers B
+                                applyDominantColor(planetA, planetB, strengthA);
+                                // Update conquest count for A
+                                const conquerorData = civilizationConquests.get(planetA.userData.civilizationId);
+                                conquerorData.conquests++;
+                                conquerorData.color = planetA.material.color.getStyle();
+                                updateMetricsDisplay();
+                            } else if (strengthB > strengthA) {
+                                // Civilization B conquers A
+                                applyDominantColor(planetB, planetA, strengthB);
+                                // Update conquest count for B
+                                const conquerorData = civilizationConquests.get(planetB.userData.civilizationId);
+                                conquerorData.conquests++;
+                                conquerorData.color = planetB.material.color.getStyle();
+                                updateMetricsDisplay();
+                            } else {
+                                // Equal strength - merge civilizations
+                                mergeCivilizations(planetA, planetB);
+                                // Both get credit for the merger
+                                civilizationConquests.get(planetA.userData.civilizationId).conquests += 0.5;
+                                civilizationConquests.get(planetB.userData.civilizationId).conquests += 0.5;
+                                updateMetricsDisplay();
+                            }
+
+                            // Mark this interaction as processed for this time step
+                            planetA.userData.interactions.add(interactionKey);
+                            planetB.userData.interactions.add(interactionKey);
                         }
                     }
                 }
-                
-                // Update the sphere of influence visualization
-                updateSphereOfInfluence(planetA, radiusA);
+
+                updateSphereOfInfluence(planetA, sphereRadiusA);
             }
+
+            // Clear interaction tracking at the end of each time step
+            civilizationPlanets.forEach(planet => {
+                if (planet.userData.interactions) {
+                    planet.userData.interactions.clear();
+                }
+            });
+        }
+
+        // Calculate civilization strength based on tech and aggression
+        function calculateCivilizationStrength(planet) {
+            const tech = planet.userData.techAdvancementRate;
+            const aggression = planet.userData.aggressivenessFactor;
+            // Tech has slightly more weight than aggression
+            return (tech * 0.6) + (aggression * 0.4);
+        }
+
+        // Update the applyDominantColor function to check if influence spheres exist
+        function applyDominantColor(dominant, subordinate, dominantStrength) {
+            // Get the original colors
+            const dominantColor = dominant.userData.originalColor;
+            const subordinateColor = subordinate.userData.originalColor;
+            
+            // Calculate influence based on strength (stronger = less influence from subordinate)
+            const dominantInfluence = 0.7 + (dominantStrength * 0.3); // 0.7-1.0 range
+            const subordinateInfluence = 1 - dominantInfluence;
+            
+            // Mix the colors
+            const newHue = (dominantColor.h * dominantInfluence) + (subordinateColor.h * subordinateInfluence);
+            const newSat = (dominantColor.s * dominantInfluence) + (subordinateColor.s * subordinateInfluence);
+            const newLight = (dominantColor.l * dominantInfluence) + (subordinateColor.l * subordinateInfluence);
+            
+            // Apply the new color to both civilizations
+            dominant.material.color.setHSL(newHue, newSat, newLight);
+            subordinate.material.color.setHSL(newHue, newSat, newLight);
+            
+            // Update influence spheres if they exist
+            if (dominant.userData.influenceSphere) {
+                dominant.userData.influenceSphere.material.color.copy(dominant.material.color);
+            }
+            if (subordinate.userData.influenceSphere) {
+                subordinate.userData.influenceSphere.material.color.copy(subordinate.material.color);
+            }
+            
+            // Update the conquest data color
+            civilizationConquests.get(dominant.userData.civilizationId).color = 
+                `hsl(${newHue * 360}, ${newSat * 100}%, ${newLight * 100}%)`;
+        }
+
+        // Update the mergeCivilizations function similarly
+        function mergeCivilizations(civA, civB) {
+            // Average the colors
+            const colorA = civA.userData.originalColor;
+            const colorB = civB.userData.originalColor;
+            
+            const newHue = (colorA.h + colorB.h) / 2;
+            const newSat = (colorA.s + colorB.s) / 2;
+            const newLight = (colorA.l + colorB.l) / 2;
+            
+            // Apply the merged color to both civilizations
+            civA.material.color.setHSL(newHue, newSat, newLight);
+            civB.material.color.setHSL(newHue, newSat, newLight);
+            
+            // Update influence spheres if they exist
+            if (civA.userData.influenceSphere) {
+                civA.userData.influenceSphere.material.color.copy(civA.material.color);
+            }
+            if (civB.userData.influenceSphere) {
+                civB.userData.influenceSphere.material.color.copy(civB.material.color);
+            }
+            
+            // Update the conquest data colors
+            const newColorString = `hsl(${newHue * 360}, ${newSat * 100}%, ${newLight * 100}%)`;
+            civilizationConquests.get(civA.userData.civilizationId).color = newColorString;
+            civilizationConquests.get(civB.userData.civilizationId).color = newColorString;
         }
         
-        // Update the visualization of a sphere of influence
+        // Update the updateSphereOfInfluence function to ensure proper color initialization
         function updateSphereOfInfluence(planet, radius) {
             // Get or create the influence sphere
             if (!planet.userData.influenceSphere) {
@@ -890,12 +1053,8 @@
             const sphere = planet.userData.influenceSphere;
             sphere.scale.set(radius, radius, radius);
             
-            // Update sphere color if planet is collided
-            if (planet.userData.collided) {
-                sphere.material.color.set(0xFFFFFF);
-            } else if (timeValue === 0) {
-                sphere.material.color.copy(planet.material.color);
-            }
+            // Ensure sphere color matches planet color
+            sphere.material.color.copy(planet.material.color);
         }
         
         // Animation loop
@@ -916,6 +1075,29 @@
             }
             
             renderer.render(scene, camera);
+        }
+        
+        // Add this function to update the metrics display
+        function updateMetricsDisplay() {
+            // Update Earth encounters
+            document.getElementById('earth-encounters').textContent = earthEncounters;
+            
+            // Find the civilization with most conquests
+            let maxConquests = 0;
+            let topConqueror = 'None';
+            let topConquerorColor = '#FFFFFF';
+            
+            civilizationConquests.forEach((data, id) => {
+                if (data.conquests > maxConquests) {
+                    maxConquests = data.conquests;
+                    topConqueror = `Civ ${id.substring(0, 4)}`;
+                    topConquerorColor = data.color;
+                }
+            });
+            
+            // Update top conqueror display with color
+            const topConquerorElement = document.getElementById('top-conqueror');
+            topConquerorElement.innerHTML = `<span style="color: ${topConquerorColor}">${topConqueror}</span> (${maxConquests})`;
         }
         
         // Start the visualization
