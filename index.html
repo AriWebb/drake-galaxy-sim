@@ -423,35 +423,34 @@
                 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
                 planet.position.set(x, y, z);
               
-                // Assign random expansion start time
-                const expansionStart = Math.random() * 100; // Random start time between 0 and 100
-                
-                // Assign random expansion rate with wider range (units of distance per time unit)
-                // Some civilizations expand very slowly, others very quickly
+                // Calculate expansion/tech rate with the same logic as before
                 const expansionRate = Math.random() < 0.3 ? 
                     0.5 + Math.random() * 2 :  // 30% chance of slow expansion (0.5-2.5)
                     Math.random() < 0.6 ? 
                         3 + Math.random() * 7 :  // 42% chance of medium expansion (3-10)
                         10 + Math.random() * 15;  // 28% chance of fast expansion (10-25)
-                
-                // Add a pulsing effect to make civilizations noticeable
+
+                // Normalize the expansion rate to 0-1 range for tech rate
+                const maxPossibleRate = 25; // Maximum possible expansion rate
+                const normalizedTechRate = expansionRate / maxPossibleRate; // This will give us 0-1
+
                 planet.userData = {
                     initialScale: 1,
                     pulsePhase: Math.random() * Math.PI * 2,
                     pulseSpeed: 0.5 + Math.random() * 0.5,
-                    expansionStart: expansionStart,
+                    expansionStart: Math.random() * 100,
                     expansionRate: expansionRate,
                     baseRadius: baseRadius,
-                    collided: false,
                     originalColor: {
                         h: hue,
                         s: saturation,
                         l: lightness
                     },
-                    techAdvancementRate: Math.random(), // 0-1, higher means more advanced
-                    aggressivenessFactor: Math.random(), // 0-1, higher means more aggressive
+                    techAdvancementRate: normalizedTechRate, // Using normalized expansion rate as tech rate
+                    aggressivenessFactor: Math.random(),
                     civilizationId: `civ_${Math.random().toString(36).substr(2, 9)}`,
-                    conqueredCivs: new Set(), // Track unique civilizations conquered
+                    conqueredCivs: new Set(),
+                    encounteredEarth: false
                 };
                 
                 civilizationConquests.set(planet.userData.civilizationId, {
@@ -938,20 +937,9 @@
                 window.hasReset = false;
             }
 
-            // Clear previous interactions at the start of each time step
-            civilizationPlanets.forEach(planet => {
-                if (!planet.userData.interactions) {
-                    planet.userData.interactions = new Set();
-                } else {
-                    planet.userData.interactions.clear();
-                }
-            });
-
             for (let i = 0; i < civilizationPlanets.length; i++) {
                 const planetA = civilizationPlanets[i];
                 const timeSinceStartA = Math.max(0, timeValue - planetA.userData.expansionStart);
-                
-                // Calculate the current radius - always expanding
                 const sphereRadiusA = planetA.userData.baseRadius + (timeSinceStartA * planetA.userData.expansionRate);
 
                 // Check for Earth intersection
@@ -968,48 +956,23 @@
                     const planetB = civilizationPlanets[j];
                     const distance = planetA.position.distanceTo(planetB.position);
 
-                    // Check if sphereA has reached planetB's core
+                    // Check for sphere intersection with planet
                     if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
-                        const interactionKey = `${Math.min(i, j)}-${Math.max(i, j)}`;
-
-                        if (!planetA.userData.interactions.has(interactionKey) && 
-                            !planetB.userData.interactions.has(interactionKey)) {
-                            
-                            // Check for overwhelming superiority conditions
-                            const aHighlyAggressiveAndAdvanced = 
-                                planetA.userData.aggressivenessFactor >= 0.9 && 
-                                planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
-                            
-                            const bHighlyAggressiveAndAdvanced = 
-                                planetB.userData.aggressivenessFactor >= 0.9 && 
-                                planetB.userData.techAdvancementRate >= planetA.userData.techAdvancementRate * 2;
-                            
-                            if (aHighlyAggressiveAndAdvanced) {
-                                // A dominates through superior tech and high aggression
-                                applyDominantColor(planetA, planetB, 1);
-                                planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
-                                planetB.userData.conqueredCivs.forEach(civ => {
-                                    planetA.userData.conqueredCivs.add(civ);
-                                });
-                                civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
-                                    new Set([...planetA.userData.conqueredCivs]);
-                                updateMetricsDisplay();
-                            } else if (bHighlyAggressiveAndAdvanced) {
-                                // B dominates through superior tech and high aggression
-                                applyDominantColor(planetB, planetA, 1);
-                                planetB.userData.conqueredCivs.add(planetA.userData.civilizationId);
-                                planetA.userData.conqueredCivs.forEach(civ => {
-                                    planetB.userData.conqueredCivs.add(civ);
-                                });
-                                civilizationConquests.get(planetB.userData.civilizationId).conqueredCivs = 
-                                    new Set([...planetB.userData.conqueredCivs]);
-                                updateMetricsDisplay();
-                            }
-                            // No else condition - civilizations remain unchanged if no overwhelming superiority
-
-                            // Mark interaction as processed
-                            planetA.userData.interactions.add(interactionKey);
-                            planetB.userData.interactions.add(interactionKey);
+                        // Check for overwhelming superiority conditions
+                        const aHighlyAggressiveAndAdvanced = 
+                            planetA.userData.aggressivenessFactor >= 0.9 && 
+                            planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
+                        
+                        if (aHighlyAggressiveAndAdvanced) {
+                            // A dominates through superior tech and high aggression
+                            applyDominantColor(planetA, planetB, 1);
+                            planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
+                            planetB.userData.conqueredCivs.forEach(civ => {
+                                planetA.userData.conqueredCivs.add(civ);
+                            });
+                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
+                                new Set([...planetA.userData.conqueredCivs]);
+                            updateMetricsDisplay();
                         }
                     }
                 }

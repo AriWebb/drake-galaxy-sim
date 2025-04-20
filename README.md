@@ -13,23 +13,37 @@ An interactive 3D visualization of the Drake equation, simulating the potential 
 ## Civilization Mechanics
 
 Each civilization is characterized by:
-- **Tech Advancement Rate**: (0-1) Represents technological sophistication
+- **Expansion/Tech Rate**: Single value determining both:
+  - How quickly their sphere of influence grows
+  - Their technological sophistication (normalized to 0-1)
 - **Aggressiveness Factor**: (0-1) Represents military/expansionist tendency
-- **Expansion Rate**: Determines how quickly their sphere of influence grows
 - **Sphere of Influence**: Visualized as a transparent sphere around their core world
 
+### Expansion and Technology
+Civilizations have three possible expansion/tech categories:
+- Slow (30% chance): 0.5-2.5 units/time (tech rate: 0.02-0.1)
+- Medium (42% chance): 3-10 units/time (tech rate: 0.12-0.4)
+- Fast (28% chance): 10-25 units/time (tech rate: 0.4-1.0)
+
+This linking of expansion and technology represents how a civilization's ability to expand is directly related to their technological advancement.
+
 ### Combat Resolution
-Civilization conflicts are resolved through a single condition:
+Civilization conflicts are checked continuously during expansion:
 
 **Overwhelming Superiority**:
-- A civilization can only conquer another if it has:
-  - Aggressiveness ≥ 0.9 AND
-  - Technology level ≥ 2× opponent's technology
-- If these conditions are met, the superior civilization conquers the other
-- If these conditions are not met, both civilizations remain independent
-- No mergers or partial conquests occur
+- Every time a civilization's sphere of influence reaches another civilization's planet, conquest is possible if:
+  - Aggression ≥ 0.9 AND
+  - Expansion/Tech rate ≥ 2× opponent's rate
+- Conquest checks occur continuously as spheres expand
+- Each civilization can attempt conquest multiple times as their sphere grows
+- Only overwhelming technological and aggressive superiority results in conquest
 
-This represents how only highly aggressive, technologically superior civilizations can successfully conquer others, while most civilization encounters result in continued independence.
+This system represents:
+- Direct correlation between expansion capability and technological advancement
+- Faster expanding civilizations are inherently more technologically advanced
+- Continuous pressure from expanding civilizations
+- The importance of maintaining technological superiority
+- The role of high aggression in successful conquest
 
 ## Metrics Tracked
 - **Earth Encounters**: Number of civilizations that have reached Earth
