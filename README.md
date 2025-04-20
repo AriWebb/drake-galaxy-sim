@@ -13,28 +13,26 @@ An interactive 3D visualization of the Drake equation, simulating the potential 
 ## Civilization Mechanics
 
 Each civilization is characterized by:
-- **Tech Advancement Rate**: (0-1) Influences their strength in encounters
-- **Aggressiveness Factor**: (0-1) Affects their ability to dominate other civilizations
+- **Tech Advancement Rate**: (0-1) Represents technological sophistication
+- **Aggressiveness Factor**: (0-1) Represents military/expansionist tendency
 - **Expansion Rate**: Determines how quickly their sphere of influence grows
 - **Sphere of Influence**: Visualized as a transparent sphere around their core world
 
-### Strength Calculation
-The strength of a civilization is determined by the following equation:
+### Combat Resolution
+Victory in civilization conflicts is determined by two possible conditions:
 
-```
-Strength = (Tech × 0.6) + (Aggression × 0.4)
-```
+1. **Overwhelming Superiority**:
+   - If a civilization has:
+     - Aggressiveness ≥ 0.9 AND
+     - Technology level ≥ 2× opponent's technology
+   - Then it automatically wins the conflict
 
-Where:
-- Tech: Technology advancement rate (0-1)
-- Aggression: Aggressiveness factor (0-1)
-- Tech is weighted at 60% of the total strength
-- Aggression is weighted at 40% of the total strength
+2. **Standard Combat** (if overwhelming superiority is not achieved):
+   - Strength = (Tech × 0.6) + (Aggression × 0.4)
+   - Higher strength score wins
+   - Equal strength results in merger
 
-When civilizations interact:
-- If Strength_A > Strength_B: Civilization A conquers B
-- If Strength_B > Strength_A: Civilization B conquers A
-- If Strength_A = Strength_B: Civilizations merge
+This system represents how highly aggressive, technologically superior civilizations can dominate less advanced ones, regardless of other factors.
 
 ## Metrics Tracked
 - **Earth Encounters**: Number of civilizations that have reached Earth
