@@ -1128,7 +1128,7 @@
                     topConquerorId = id;
                     // Find the civilization's index
                     const civIndex = civilizationPlanets.findIndex(c => c.userData.civilizationId === id);
-                    topConqueror = `Civ_${civIndex + 1}`; // Adding 1 to make it 1-based instead of 0-based
+                    topConqueror = `Civ #${civIndex + 1}`; // Adding 1 to make it 1-based instead of 0-based
                     topConquerorColor = data.color;
                     // Find the civilization's scores
                     const civ = civilizationPlanets[civIndex];
@@ -1143,10 +1143,10 @@
             const topConquerorElement = document.getElementById('top-conqueror');
             if (maxConquests > 0) {
                 topConquerorElement.style.color = topConquerorColor;
-                topConquerorElement.textContent = `${topConqueror} (Aggr: ${topConquerorAggression}, Tech: ${topConquerorTech}) has conquered ${maxConquests} civilizations`;
+                topConquerorElement.textContent = `${topConqueror} (Aggr: ${topConquerorAggression}, Tech: ${topConquerorTech}) has taken over ${maxConquests} civilizations`;
             } else {
                 topConquerorElement.style.color = '#FFFFFF';
-                topConquerorElement.textContent = 'No conquests yet';
+                topConquerorElement.textContent = 'No takeovers yet';
             }
         }
         
