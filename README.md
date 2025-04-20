@@ -8,7 +8,7 @@ An interactive 3D visualization of the Drake equation, simulating the potential 
 - **Drake Equation Calculator**: Adjust parameters to estimate the number of detectable civilizations
 - **Civilization Generation**: Visualize potential civilizations based on Drake equation results
 - **Expansion Simulation**: Watch civilizations expand their spheres of influence over time
-- **Dynamic Interactions**: Civilizations can conquer, be conquered, or merge based on their relative strengths
+- **Dynamic Interactions**: Civilizations can expand, takeover, or merge based on their relative scores
 
 ## Civilization Mechanics
 
@@ -51,7 +51,7 @@ Civilization touchpoints are checked continuously during expansion:
 
 ## Simulation Details
 
-- Each civilization starts with a random tech level and aggressiveness factor
+- Each civilization starts with a random technology level and aggressiveness factor
 - Spheres of influence expand at different rates based on civilization parameters
 - Takeovers are determined by comparing tech levels and aggressiveness
 - Color mixing reflects the history of conquests and mergers
