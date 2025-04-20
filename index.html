@@ -51,26 +51,26 @@
         
         <div class="slider-container">
             <label for="R">R* = Average rate of star formation (stars/year)</label>
-            <input type="range" id="R" min="1" max="20" value="7" step="0.1">
-            <span id="R-value">7</span>
+            <input type="range" id="R" min="1" max="20" value="10" step="0.1">
+            <span id="R-value">10</span>
         </div>
         
         <div class="slider-container">
             <label for="fp">fp = Fraction of stars with planets</label>
-            <input type="range" id="fp" min="0" max="1" value="0.5" step="0.01">
-            <span id="fp-value">0.5</span>
+            <input type="range" id="fp" min="0" max="1" value="0.99" step="0.01">
+            <span id="fp-value">0.99</span>
         </div>
         
         <div class="slider-container">
-            <label for="ne">ne = Average habitable planets per star</label>
-            <input type="range" id="ne" min="0" max="5" value="2" step="0.1">
-            <span id="ne-value">2</span>
+            <label for="ne">ne = Average habitable planets per star with planets</label>
+            <input type="range" id="ne" min="0" max="5" value="0.4" step="0.1">
+            <span id="ne-value">0.4</span>
         </div>
         
         <div class="slider-container">
             <label for="fl">fl = Fraction of habitable planets with life</label>
-            <input type="range" id="fl" min="0" max="1" value="0.33" step="0.0001">
-            <span id="fl-value">0.3300</span>
+            <input type="range" id="fl" min="0" max="1" value="0.1" step="0.0001">
+            <span id="fl-value">0.1000</span>
         </div>
         
         <div class="slider-container">
@@ -81,8 +81,8 @@
         
         <div class="slider-container">
             <label for="fc">fc = Fraction of intelligence that develops detectable technology</label>
-            <input type="range" id="fc" min="0" max="1" value="0.1" step="0.01">
-            <span id="fc-value">0.1</span>
+            <input type="range" id="fc" min="0" max="1" value="0.3" step="0.0001">
+            <span id="fc-value">0.3000</span>
         </div>
         
         <div class="slider-container">
@@ -104,7 +104,7 @@
             <span id="aggression-threshold-value">0.9</span>
         </div>
         <div class="time-control">
-            <label for="time-slider">Time: <span id="time-value">0</span></label>
+            <label for="time-slider">Time (Epochs): <span id="time-value">0</span></label>
             <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">            
             <div class="time-buttons">
                 <button id="play-pause">Play</button>
