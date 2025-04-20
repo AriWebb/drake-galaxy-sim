@@ -1,6 +1,6 @@
 # Drake Equation Galaxy Simulation
 
-An interactive 3D visualization of the Drake equation, simulating the potential for detectable civilizations in our galaxy and their expansion over time.
+An interactive 3D visualization of the Drake equation, simulating the potential for detectable civilizations in our galaxy and their expansion over time. Play with the latest version here: https://ariwebb.com/drake-galaxy-sim/
 
 ## Features
 
