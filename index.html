@@ -790,12 +790,11 @@
             // Add label to container
             container.appendChild(earthLabelDiv);
             
-            // Store Earth's position
-            const earthPosition = new THREE.Vector3(x, y, z);
+            // Store Earth's position with offset for label
+            const earthPosition = new THREE.Vector3(x, y + 35, z); // Add vertical offset
             
             // Function to update label position
             function updateLabelPosition() {
-                // Use exact Earth position without offset
                 const tempVector = new THREE.Vector3();
                 tempVector.copy(earthPosition);
                 tempVector.project(camera);
@@ -809,7 +808,7 @@
                 
                 // Show/hide label based on camera position
                 const isBehindCamera = tempVector.z > 1;
-                const distance = camera.position.distanceTo(earthPosition);
+                const distance = camera.position.distanceTo(new THREE.Vector3(x, y, z)); // Use original Earth position for distance check
                 const isVisible = !isBehindCamera && distance < 15000;
                 earthLabelDiv.style.display = isVisible ? 'block' : 'none';
                 
