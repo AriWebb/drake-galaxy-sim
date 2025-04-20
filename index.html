@@ -69,14 +69,14 @@
         
         <div class="slider-container">
             <label for="fl">fl = Fraction of habitable planets with life</label>
-            <input type="range" id="fl" min="0" max="1" value="0.33" step="0.01">
-            <span id="fl-value">0.33</span>
+            <input type="range" id="fl" min="0" max="1" value="0.33" step="0.0001">
+            <span id="fl-value">0.3300</span>
         </div>
         
         <div class="slider-container">
             <label for="fi">fi = Fraction of life that develops intelligence</label>
-            <input type="range" id="fi" min="0" max="1" value="0.1" step="0.01">
-            <span id="fi-value">0.1</span>
+            <input type="range" id="fi" min="0" max="1" value="0.1" step="0.0001">
+            <span id="fi-value">0.1000</span>
         </div>
         
         <div class="slider-container">
@@ -315,20 +315,24 @@
         
         // Setup Drake Equation sliders and calculation
         function setupDrakeEquation() {
-            // Get all sliders
-            const sliders = ['R', 'fp', 'ne', 'fl', 'fi', 'fc', 'L'];
-            
-            // Add event listeners to update values and recalculate N
-            sliders.forEach(id => {
+            // Regular slider handlers
+            ['R', 'fp', 'ne', 'fc', 'L'].forEach(id => {
                 const slider = document.getElementById(id);
-                const valueSpan = document.getElementById(`${id}-value`);
+                const valueDisplay = document.getElementById(`${id}-value`);
                 
-                // Set initial value
-                valueSpan.textContent = slider.value;
-                
-                // Add change event listener
                 slider.addEventListener('input', function() {
-                    valueSpan.textContent = this.value;
+                    valueDisplay.textContent = this.value;
+                    calculateDrakeEquation();
+                });
+            });
+            
+            // Special handlers for fl and fi with 4 decimal places
+            ['fl', 'fi'].forEach(id => {
+                const slider = document.getElementById(id);
+                const valueDisplay = document.getElementById(`${id}-value`);
+                
+                slider.addEventListener('input', function() {
+                    valueDisplay.textContent = parseFloat(this.value).toFixed(4);
                     calculateDrakeEquation();
                 });
             });
@@ -744,44 +748,82 @@
         
         // Function to create a text label for Earth
         function createEarthLabel(x, y, z) {
+            // Remove any existing Earth label
+            const existingLabel = document.querySelector('.earth-label');
+            if (existingLabel) {
+                existingLabel.remove();
+            }
+            
             // Create a div for the label
             const earthLabelDiv = document.createElement('div');
-            earthLabelDiv.className = 'label';
+            earthLabelDiv.className = 'earth-label';
             earthLabelDiv.textContent = 'Earth';
-            earthLabelDiv.style.color = '#ffffff';
+            
+            // Add CSS styles directly to the label
             earthLabelDiv.style.position = 'absolute';
-            earthLabelDiv.style.backgroundColor = 'rgba(0,0,0,0.6)';
-            earthLabelDiv.style.padding = '2px 6px';
-            earthLabelDiv.style.borderRadius = '3px';
+            earthLabelDiv.style.color = '#ffffff';
+            earthLabelDiv.style.padding = '4px 8px';
+            earthLabelDiv.style.fontWeight = 'bold';
+            earthLabelDiv.style.fontSize = '14px';
             earthLabelDiv.style.pointerEvents = 'none';
-            earthLabelDiv.style.zIndex = '10';
-            document.body.appendChild(earthLabelDiv);
+            earthLabelDiv.style.zIndex = '1000';
+            earthLabelDiv.style.textShadow = '2px 2px 3px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.9)';
+            earthLabelDiv.style.backgroundColor = 'transparent';
+            earthLabelDiv.style.whiteSpace = 'nowrap';
+            earthLabelDiv.style.userSelect = 'none';
+            earthLabelDiv.style.transform = 'translate(-50%, -50%)';
             
-            // Update the label position in the animation loop
+            // Create or get the container
+            let container = document.querySelector('#earth-label-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'earth-label-container';
+                container.style.position = 'absolute';
+                container.style.top = '0';
+                container.style.left = '0';
+                container.style.width = '100%';
+                container.style.height = '100%';
+                container.style.pointerEvents = 'none';
+                container.style.zIndex = '1000';
+                document.body.appendChild(container);
+            }
+            
+            // Add label to container
+            container.appendChild(earthLabelDiv);
+            
+            // Store Earth's position
             const earthPosition = new THREE.Vector3(x, y, z);
-            const earthVector = new THREE.Vector3();
             
-            // Add to the animation function to update position
-            const originalAnimate = animate;
-            animate = function() {
-                // Call the original animate function
-                originalAnimate();
+            // Function to update label position
+            function updateLabelPosition() {
+                // Use exact Earth position without offset
+                const tempVector = new THREE.Vector3();
+                tempVector.copy(earthPosition);
+                tempVector.project(camera);
+                
+                // Convert 3D position to screen coordinates
+                const screenX = (tempVector.x * 0.5 + 0.5) * window.innerWidth;
+                const screenY = (-tempVector.y * 0.5 + 0.5) * window.innerHeight;
                 
                 // Update label position
-                earthVector.copy(earthPosition);
-                earthVector.project(camera);
+                earthLabelDiv.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px)`;
                 
-                const x = (earthVector.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (-(earthVector.y * 0.5) + 0.5) * window.innerHeight;
+                // Show/hide label based on camera position
+                const isBehindCamera = tempVector.z > 1;
+                const distance = camera.position.distanceTo(earthPosition);
+                const isVisible = !isBehindCamera && distance < 15000;
+                earthLabelDiv.style.display = isVisible ? 'block' : 'none';
                 
-                earthLabelDiv.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-                
-                // Hide label if Earth is behind the camera
-                if (earthVector.z > 1) {
-                    earthLabelDiv.style.display = 'none';
-                } else {
-                    earthLabelDiv.style.display = 'block';
-                }
+                // Scale label based on distance (but keep it more subtle)
+                const scale = Math.max(0.8, Math.min(1.2, 2000 / distance));
+                earthLabelDiv.style.transform = `translate(-50%, -50%) translate(${screenX}px, ${screenY}px) scale(${scale})`;
+            }
+            
+            // Add the update function to the animation loop
+            const originalAnimate = animate;
+            animate = function() {
+                originalAnimate();
+                updateLabelPosition();
             };
         }
         
