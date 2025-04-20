@@ -13,10 +13,9 @@ An interactive 3D visualization of the Drake equation, simulating the potential 
 ## Civilization Mechanics
 
 Each civilization is characterized by:
-- **Expansion/Tech Rate**: Single value determining both:
-  - How quickly their sphere of influence grows
-  - Their technological sophistication (normalized to 0-1)
+- **Tech Advancement Rate**: (0-1) Represents technological sophistication
 - **Aggressiveness Factor**: (0-1) Represents military/expansionist tendency
+- **Expansion Rate**: Determines how quickly their sphere of influence grows
 - **Sphere of Influence**: Visualized as a transparent sphere around their core world
 
 ### Expansion and Technology

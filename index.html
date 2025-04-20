@@ -434,9 +434,6 @@
                         3 + Math.random() * 7 :  // 42% chance of medium expansion (3-10)
                         10 + Math.random() * 15;  // 28% chance of fast expansion (10-25)
 
-                // Normalize the expansion rate to 0-1 range for tech rate
-                const maxPossibleRate = 25; // Maximum possible expansion rate
-                const normalizedTechRate = expansionRate / maxPossibleRate; // This will give us 0-1
 
                 planet.userData = {
                     initialScale: 1,
@@ -450,7 +447,7 @@
                         s: saturation,
                         l: lightness
                     },
-                    techAdvancementRate: normalizedTechRate, // Using normalized expansion rate as tech rate
+                    techAdvancementRate: Math.random(),
                     aggressivenessFactor: Math.random(),
                     civilizationId: `civ_${Math.random().toString(36).substr(2, 9)}`,
                     conqueredCivs: new Set(),
