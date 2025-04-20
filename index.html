@@ -450,13 +450,12 @@
                     },
                     techAdvancementRate: Math.random(), // 0-1, higher means more advanced
                     aggressivenessFactor: Math.random(), // 0-1, higher means more aggressive
-                    civilizationStrength: 0, // Will be calculated during collision
                     civilizationId: `civ_${Math.random().toString(36).substr(2, 9)}`,
-                    conquests: 0
+                    conqueredCivs: new Set(), // Track unique civilizations conquered
                 };
                 
                 civilizationConquests.set(planet.userData.civilizationId, {
-                    conquests: 0,
+                    conqueredCivs: new Set(),
                     color: `hsl(${hue * 360}, ${saturation * 100}%, ${lightness * 100}%)`
                 });
                 
@@ -802,40 +801,44 @@
             
             // Play/Pause button
             playPauseButton.addEventListener('click', function() {
-                isPlaying = !isPlaying;
-                this.textContent = isPlaying ? 'Pause' : 'Play';
-                
-                if (isPlaying) {
-                    lastUpdateTime = Date.now() * 0.001;
-                    animateTime();
-                } else {
-                    cancelAnimationFrame(animationId);
-                }
+                togglePlayPause();
             });
             
             // Reset button
             resetButton.addEventListener('click', function() {
-                timeValue = 0;
-                timeSlider.value = timeValue;
-                timeValueDisplay.textContent = timeValue;
-                updateSphereExpansion();
-                
-                // If playing, reset but continue playing
-                if (!isPlaying) {
-                    cancelAnimationFrame(animationId);
-                }
+                resetSimulation();
             });
         }
         
-        // Animation for time simulation
+        // Add separate functions to handle play/pause toggle
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const playPauseButton = document.getElementById('play-pause');
+            playPauseButton.textContent = isPlaying ? 'Pause' : 'Play';
+            
+            if (isPlaying) {
+                lastUpdateTime = Date.now() * 0.001; // Reset the last update time
+                if (timeValue === 0) {
+                    window.hasReset = true; // Ensure we don't reset when starting from 0
+                }
+                animateTime();
+            } else {
+                if (animationId !== null) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            }
+        }
+        
+        // Update the animateTime function
         function animateTime() {
             const currentTime = Date.now() * 0.001;
             const deltaTime = currentTime - lastUpdateTime;
             lastUpdateTime = currentTime;
             
             // Update time value
-            timeValue = Math.min(parseFloat(document.getElementById('time-slider').max), 
-                              timeValue + deltaTime * TIME_SPEED);
+            const maxTime = parseFloat(document.getElementById('time-slider').max);
+            timeValue = Math.min(maxTime, timeValue + deltaTime * TIME_SPEED);
             
             // Update UI
             document.getElementById('time-slider').value = timeValue;
@@ -845,54 +848,115 @@
             updateSphereExpansion();
             
             // If we've reached the max, stop playing
-            if (timeValue >= parseFloat(document.getElementById('time-slider').max)) {
+            if (timeValue >= maxTime) {
                 isPlaying = false;
                 document.getElementById('play-pause').textContent = 'Play';
+                animationId = null;
             } else if (isPlaying) {
                 animationId = requestAnimationFrame(animateTime);
             }
         }
         
+        // Update the resetSimulation function
+        function resetSimulation() {
+            // First cancel any ongoing animation
+            if (animationId !== null) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            // Reset time
+            timeValue = 0;
+            document.getElementById('time-slider').value = timeValue;
+            document.getElementById('time-value').textContent = timeValue;
+            
+            // Reset play state
+            isPlaying = false;
+            document.getElementById('play-pause').textContent = 'Play';
+            lastUpdateTime = Date.now() * 0.001; // Reset the last update time
+            window.hasReset = true; // Set the reset flag
+
+            // Reset metrics
+            earthEncounters = 0;
+            civilizationConquests.clear();
+
+            // Reset all civilizations
+            civilizationPlanets.forEach(planet => {
+                // Reset Earth encounter flag
+                planet.userData.encounteredEarth = false;
+                
+                // Reset conquest count
+                planet.userData.conquests = 0;
+                
+                // Reset color to original
+                planet.material.color.setHSL(
+                    planet.userData.originalColor.h,
+                    planet.userData.originalColor.s,
+                    planet.userData.originalColor.l
+                );
+
+                // Reset influence sphere
+                if (planet.userData.influenceSphere) {
+                    planet.userData.influenceSphere.material.color.copy(planet.material.color);
+                    planet.userData.influenceSphere.scale.set(
+                        planet.userData.baseRadius,
+                        planet.userData.baseRadius,
+                        planet.userData.baseRadius
+                    );
+                }
+
+                // Clear interaction history
+                if (planet.userData.interactions) {
+                    planet.userData.interactions.clear();
+                }
+
+                // Clear conquered civs set
+                planet.userData.conqueredCivs = new Set();
+                
+                // Reset conquest tracking in the Map
+                civilizationConquests.set(planet.userData.civilizationId, {
+                    conqueredCivs: new Set(),
+                    color: `hsl(${planet.userData.originalColor.h * 360}, 
+                              ${planet.userData.originalColor.s * 100}%, 
+                              ${planet.userData.originalColor.l * 100}%)`
+                });
+            });
+
+            // Update metrics display
+            updateMetricsDisplay();
+        }
+        
         // Update sphere expansion based on time
         function updateSphereExpansion() {
-            // Check for collisions between civilization spheres
-            checkSpheresIntersection();
-        }
-       
-        function checkSpheresIntersection() {
             if (timeValue === 0) {
-                // Reset metrics when time is reset
-                earthEncounters = 0;
-                civilizationConquests.clear();
-                civilizationPlanets.forEach(planet => {
-                    // Reset Earth encounter flag only
-                    planet.userData.encounteredEarth = false;
-                    // Reset color to original
-                    planet.material.color.setHSL(
-                        planet.userData.originalColor.h,
-                        planet.userData.originalColor.s,
-                        planet.userData.originalColor.l
-                    );
-                    civilizationConquests.set(planet.userData.civilizationId, {
-                        conquests: 0,
-                        color: `hsl(${planet.userData.originalColor.h * 360}, 
-                                  ${planet.userData.originalColor.s * 100}%, 
-                                  ${planet.userData.originalColor.l * 100}%)`
-                    });
-                });
-                updateMetricsDisplay();
+                // Only reset if we haven't already reset
+                if (!window.hasReset) {
+                    resetSimulation();
+                    window.hasReset = true;
+                }
+            } else {
+                window.hasReset = false;
             }
+
+            // Clear previous interactions at the start of each time step
+            civilizationPlanets.forEach(planet => {
+                if (!planet.userData.interactions) {
+                    planet.userData.interactions = new Set();
+                } else {
+                    planet.userData.interactions.clear();
+                }
+            });
 
             for (let i = 0; i < civilizationPlanets.length; i++) {
                 const planetA = civilizationPlanets[i];
-                const timeSinceStartA = timeValue - planetA.userData.expansionStart;
-                if (timeSinceStartA < 0) continue;
-
+                const timeSinceStartA = Math.max(0, timeValue - planetA.userData.expansionStart);
+                
+                // Calculate the current radius - always expanding
                 const sphereRadiusA = planetA.userData.baseRadius + (timeSinceStartA * planetA.userData.expansionRate);
 
                 // Check for Earth intersection
                 const distanceToEarth = planetA.position.distanceTo(new THREE.Vector3(earthX, earthY, earthZ));
-                if (distanceToEarth < (sphereRadiusA + 30) && !planetA.userData.encounteredEarth) { // 30 is Earth's radius
+                if (distanceToEarth < (sphereRadiusA + 30) && !planetA.userData.encounteredEarth) {
                     earthEncounters++;
                     planetA.userData.encounteredEarth = true;
                     updateMetricsDisplay();
@@ -909,56 +973,65 @@
                         const strengthA = calculateCivilizationStrength(planetA);
                         const strengthB = calculateCivilizationStrength(planetB);
 
-                        // Track this specific interaction to avoid double counting
                         const interactionKey = `${Math.min(i, j)}-${Math.max(i, j)}`;
-                        if (!planetA.userData.interactions) planetA.userData.interactions = new Set();
-                        if (!planetB.userData.interactions) planetB.userData.interactions = new Set();
 
-                        // Only process if this specific pair hasn't interacted at this time step
                         if (!planetA.userData.interactions.has(interactionKey) && 
                             !planetB.userData.interactions.has(interactionKey)) {
                             
                             if (strengthA > strengthB) {
                                 // Civilization A conquers B
                                 applyDominantColor(planetA, planetB, strengthA);
-                                // Update conquest count for A
-                                const conquerorData = civilizationConquests.get(planetA.userData.civilizationId);
-                                conquerorData.conquests++;
-                                conquerorData.color = planetA.material.color.getStyle();
-                                updateMetricsDisplay();
+                                // Add B to A's conquered set
+                                planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
+                                // Also add B's conquered civs to A's set
+                                planetB.userData.conqueredCivs.forEach(civ => {
+                                    planetA.userData.conqueredCivs.add(civ);
+                                });
+                                // Update in the tracking map
+                                civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
+                                    new Set([...planetA.userData.conqueredCivs]);
                             } else if (strengthB > strengthA) {
                                 // Civilization B conquers A
                                 applyDominantColor(planetB, planetA, strengthB);
-                                // Update conquest count for B
-                                const conquerorData = civilizationConquests.get(planetB.userData.civilizationId);
-                                conquerorData.conquests++;
-                                conquerorData.color = planetB.material.color.getStyle();
-                                updateMetricsDisplay();
+                                // Add A to B's conquered set
+                                planetB.userData.conqueredCivs.add(planetA.userData.civilizationId);
+                                // Also add A's conquered civs to B's set
+                                planetA.userData.conqueredCivs.forEach(civ => {
+                                    planetB.userData.conqueredCivs.add(civ);
+                                });
+                                // Update in the tracking map
+                                civilizationConquests.get(planetB.userData.civilizationId).conqueredCivs = 
+                                    new Set([...planetB.userData.conqueredCivs]);
                             } else {
                                 // Equal strength - merge civilizations
                                 mergeCivilizations(planetA, planetB);
-                                // Both get credit for the merger
-                                civilizationConquests.get(planetA.userData.civilizationId).conquests += 0.5;
-                                civilizationConquests.get(planetB.userData.civilizationId).conquests += 0.5;
-                                updateMetricsDisplay();
+                                // Combine their conquered sets
+                                const combinedConquests = new Set([
+                                    ...planetA.userData.conqueredCivs,
+                                    ...planetB.userData.conqueredCivs,
+                                    planetB.userData.civilizationId
+                                ]);
+                                planetA.userData.conqueredCivs = combinedConquests;
+                                planetB.userData.conqueredCivs = combinedConquests;
+                                // Update in the tracking map for both
+                                civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
+                                    new Set([...combinedConquests]);
+                                civilizationConquests.get(planetB.userData.civilizationId).conqueredCivs = 
+                                    new Set([...combinedConquests]);
                             }
 
-                            // Mark this interaction as processed for this time step
+                            // Mark interaction as processed
                             planetA.userData.interactions.add(interactionKey);
                             planetB.userData.interactions.add(interactionKey);
+                            
+                            // Update metrics after each conquest
+                            updateMetricsDisplay();
                         }
                     }
                 }
 
                 updateSphereOfInfluence(planetA, sphereRadiusA);
             }
-
-            // Clear interaction tracking at the end of each time step
-            civilizationPlanets.forEach(planet => {
-                if (planet.userData.interactions) {
-                    planet.userData.interactions.clear();
-                }
-            });
         }
 
         // Calculate civilization strength based on tech and aggression
@@ -1049,11 +1122,14 @@
                 planet.userData.influenceSphere = sphere;
             }
             
-            // Update the sphere's scale to match the current radius
-            const sphere = planet.userData.influenceSphere;
-            sphere.scale.set(radius, radius, radius);
+            // Ensure radius is never smaller than base radius
+            const finalRadius = Math.max(planet.userData.baseRadius, radius);
             
-            // Ensure sphere color matches planet color
+            // Update the sphere's scale
+            const sphere = planet.userData.influenceSphere;
+            sphere.scale.set(finalRadius, finalRadius, finalRadius);
+            
+            // Update sphere color
             sphere.material.color.copy(planet.material.color);
         }
         
@@ -1082,22 +1158,24 @@
             // Update Earth encounters
             document.getElementById('earth-encounters').textContent = earthEncounters;
             
-            // Find the civilization with most conquests
+            // Find the civilization with most unique conquests
             let maxConquests = 0;
             let topConqueror = 'None';
             let topConquerorColor = '#FFFFFF';
             
             civilizationConquests.forEach((data, id) => {
-                if (data.conquests > maxConquests) {
-                    maxConquests = data.conquests;
+                const uniqueConquests = data.conqueredCivs.size;
+                if (uniqueConquests > maxConquests) {
+                    maxConquests = uniqueConquests;
                     topConqueror = `Civ ${id.substring(0, 4)}`;
                     topConquerorColor = data.color;
                 }
             });
             
-            // Update top conqueror display with color
+            // Update display to show number of unique civilizations conquered
             const topConquerorElement = document.getElementById('top-conqueror');
-            topConquerorElement.innerHTML = `<span style="color: ${topConquerorColor}">${topConqueror}</span> (${maxConquests})`;
+            topConquerorElement.innerHTML = 
+                `<span style="color: ${topConquerorColor}">${topConqueror}</span> (${maxConquests} civs)`;
         }
         
         // Start the visualization
