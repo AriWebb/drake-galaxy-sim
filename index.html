@@ -929,7 +929,6 @@
         // Update sphere expansion based on time
         function updateSphereExpansion() {
             if (timeValue === 0) {
-                // Only reset if we haven't already reset
                 if (!window.hasReset) {
                     resetSimulation();
                     window.hasReset = true;
@@ -953,17 +952,17 @@
 
                 for (let j = 0; j < civilizationPlanets.length; j++) {
                     if (i === j) continue;
-                    
+
                     const planetB = civilizationPlanets[j];
                     const distance = planetA.position.distanceTo(planetB.position);
 
                     // Check for sphere intersection with planet
                     if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
                         // Check for overwhelming superiority conditions
-                        const aHighlyAggressiveAndAdvanced = 
-                            planetA.userData.aggressivenessFactor >= 0.9 && 
+                        const aHighlyAggressiveAndAdvanced =
+                            planetA.userData.aggressivenessFactor >= 0.9 &&
                             planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
-                        
+
                         if (aHighlyAggressiveAndAdvanced) {
                             // A dominates through superior tech and high aggression
                             applyDominantColor(planetA, planetB, 1);
@@ -971,8 +970,21 @@
                             planetB.userData.conqueredCivs.forEach(civ => {
                                 planetA.userData.conqueredCivs.add(civ);
                             });
-                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
+                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs =
                                 new Set([...planetA.userData.conqueredCivs]);
+
+                            // Remove the influence sphere of the conquered planet
+                            if (planetB.userData.influenceSphere) {
+                                scene.remove(planetB.userData.influenceSphere);
+                                if (planetB.userData.influenceSphere.geometry) {
+                                    planetB.userData.influenceSphere.geometry.dispose();
+                                }
+                                if (planetB.userData.influenceSphere.material) {
+                                    planetB.userData.influenceSphere.material.dispose();
+                                }
+                                planetB.userData.influenceSphere = null; // Clear reference
+                            }
+
                             updateMetricsDisplay();
                         }
                     }
