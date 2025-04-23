@@ -102,13 +102,14 @@
         <br> <!-- Add a line break here -->
 
         <div class="slider-container">
-            <label for="aggression-threshold">Aggression Threshold (0-1)</label>
-            <input type="range" id="aggression-threshold" min="0" max="1" value="0.9" step="0.01">
-            <span id="aggression-threshold-value">0.9</span>
+            <label for="aggression-threshold">Aggression Threshold</label>
+            <input type="range" id="aggression-threshold" min="0" max="1" value="0.5" step="0.01">
+            <span id="aggression-threshold-value">0.5</span>
         </div>
         <div class="time-control">
-            <label for="time-slider">Time (Epochs): <span id="time-value">0</span></label>
+            <label for="time-slider">Time (Epochs) <span id="time-value">0</span></label>
             <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">            
+            <span id="time-slider-value">1000</span>
             <div class="time-buttons">
                 <button id="play-pause">Play</button>
                 <button id="reset-time">Reset</button>
@@ -146,6 +147,7 @@
             border-radius: 5px;
             width: 350px;
             max-height: 100vh;
+            overflow-x: hidden;
             overflow-y: auto;
             z-index: 100;
             font-family: Arial, sans-serif;
@@ -168,7 +170,6 @@
         
         input[type="range"] {
             width: 80%;
-            margin-right: 10px;
         }
 
         input[type="range"]::-webkit-slider-runnable-track {
@@ -213,8 +214,7 @@
         }
         
         #time-slider {
-            width: 100%;
-            margin: 10px 0;
+            width: 80%;
         }
         
         #play-pause, #reset-time {
