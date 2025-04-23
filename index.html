@@ -478,7 +478,8 @@
                     aggressivenessFactor: Math.random(),
                     civilizationId: `civ_${Math.random().toString(36).substr(2, 9)}`,
                     conqueredCivs: new Set(),
-                    encounteredEarth: false
+                    encounteredEarth: false,
+                    isConquered: false,
                 };
                 
                 civilizationConquests.set(planet.userData.civilizationId, {
@@ -928,12 +929,12 @@
                 cancelAnimationFrame(animationId);
                 animationId = null;
             }
-            
+
             // Reset time
             timeValue = 0;
             document.getElementById('time-slider').value = timeValue;
             document.getElementById('time-value').textContent = timeValue;
-            
+
             // Reset play state
             isPlaying = false;
             document.getElementById('play-pause').textContent = 'Play';
@@ -948,10 +949,13 @@
             civilizationPlanets.forEach(planet => {
                 // Reset Earth encounter flag
                 planet.userData.encounteredEarth = false;
-                
+
+                // Reset conquered flag
+                planet.userData.isConquered = false;
+
                 // Reset conquest count
                 planet.userData.conquests = 0;
-                
+
                 // Reset color to original
                 planet.material.color.setHSL(
                     planet.userData.originalColor.h,
@@ -976,7 +980,7 @@
 
                 // Clear conquered civs set
                 planet.userData.conqueredCivs = new Set();
-                
+
                 // Reset conquest tracking in the Map
                 civilizationConquests.set(planet.userData.civilizationId, {
                     conqueredCivs: new Set(),
@@ -1001,9 +1005,69 @@
             } else {
                 window.hasReset = false;
             }
-
+            
+            // Initialize variables
+            earthEncounters = 0;
             for (let i = 0; i < civilizationPlanets.length; i++) {
                 const planetA = civilizationPlanets[i];
+                planetA.userData.isConquered = false;
+                planetA.userData.encounteredEarth = false;
+            }
+
+            // Check for civilization interactions
+            for (let i = 0; i < civilizationPlanets.length; i++) {
+                const planetA = civilizationPlanets[i];
+                if (planetA.userData.isConquered) continue; // Skip conquered planets
+
+                const timeSinceStartA = Math.max(0, timeValue - planetA.userData.expansionStart);
+                const sphereRadiusA = planetA.userData.baseRadius + (timeSinceStartA * planetA.userData.expansionRate);
+ 
+                for (let j = 0; j < civilizationPlanets.length; j++) {
+                    if (i === j) continue;
+
+                    const planetB = civilizationPlanets[j];
+                    const distance = planetA.position.distanceTo(planetB.position);
+
+                    // Check for sphere intersection with planet
+                    if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
+                        // Check for overwhelming superiority conditions
+                        const aHighlyAggressiveAndAdvanced = 
+                            planetA.userData.aggressivenessFactor > aggressionThreshold && 
+                            planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
+                        
+                        if (aHighlyAggressiveAndAdvanced) {
+                            // A dominates through superior tech and high aggression
+                            planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
+                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs.add(planetB.userData.civilizationId);
+                            planetB.userData.isConquered = true;
+                            
+                            // Remove the influence sphere of the conquered planet
+                            if (planetB.userData.influenceSphere) {
+                                console.warn(`i = ${i+1}: Removing Planet ${j+1}.`);
+                                scene.remove(planetB.userData.influenceSphere);
+                                if (planetB.userData.influenceSphere.geometry) {
+                                    planetB.userData.influenceSphere.geometry.dispose();
+                                }
+                                if (planetB.userData.influenceSphere.material) {
+                                    planetB.userData.influenceSphere.material.dispose();
+                                }
+                                planetB.userData.influenceSphere = null; // Clear reference
+                            } else {
+                                // log missing influence sphere
+                                console.warn(`i = ${i+1}: Planet ${j+1} has no influence sphere to remove.`);
+                            }
+                        }
+                    }
+                }
+                
+                updateSphereOfInfluence(planetA, sphereRadiusA);
+            }
+
+            // Check for Earth intersection after all civilizations have expanded
+            for (let i = 0; i < civilizationPlanets.length; i++) {
+                const planetA = civilizationPlanets[i];
+                if (planetA.userData.isConquered) continue; // Skip conquered planets
+
                 const timeSinceStartA = Math.max(0, timeValue - planetA.userData.expansionStart);
                 const sphereRadiusA = planetA.userData.baseRadius + (timeSinceStartA * planetA.userData.expansionRate);
 
@@ -1014,36 +1078,7 @@
                     planetA.userData.encounteredEarth = true;
                     updateMetricsDisplay();
                 }
-
-                for (let j = 0; j < civilizationPlanets.length; j++) {
-                    if (i === j) continue;
-                    
-                    const planetB = civilizationPlanets[j];
-                    const distance = planetA.position.distanceTo(planetB.position);
-
-                    // Check for sphere intersection with planet
-                    if (distance < (sphereRadiusA + planetB.userData.baseRadius)) {
-                        // Check for overwhelming superiority conditions
-                        const aHighlyAggressiveAndAdvanced = 
-                            planetA.userData.aggressivenessFactor >= aggressionThreshold && 
-                            planetA.userData.techAdvancementRate >= planetB.userData.techAdvancementRate * 2;
-                        
-                        if (aHighlyAggressiveAndAdvanced) {
-                            // A dominates through superior tech and high aggression
-                            applyDominantColor(planetA, planetB, 1);
-                            planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
-                            planetB.userData.conqueredCivs.forEach(civ => {
-                                planetA.userData.conqueredCivs.add(civ);
-                            });
-                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs = 
-                                new Set([...planetA.userData.conqueredCivs]);
-                            updateMetricsDisplay();
-                        }
-                    }
-                }
-
-                updateSphereOfInfluence(planetA, sphereRadiusA);
-            }
+            }   
         }
 
         // Calculate civilization strength based on tech and aggression
@@ -1140,7 +1175,7 @@
                 
                 planet.userData.influenceSphere = sphere;
             }
-            
+
             // Ensure radius is never smaller than base radius
             const finalRadius = Math.max(planet.userData.baseRadius, radius);
             
