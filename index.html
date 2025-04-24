@@ -118,7 +118,7 @@
 
         <div class="metrics">
             <div>Earth Encounters: <span id="earth-encounters">0</span></div>
-            <div id="top-conqueror">No takeovers yet</div>
+            <div id="top-conqueror"></div>
         </div>
 </div>
     
@@ -232,6 +232,7 @@
         #top-conqueror {
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             font-weight: bold;
+            padding-bottom: 15px;
         }
     </style>
     
@@ -272,8 +273,8 @@
         
         // Add these variables at the top level with other global variables
         let earthEncounters = 0;
-        let civilizationConquests = new Map(); // Track conquests for each civilization
-        let aggressionThreshold = 0.9; // Default aggression threshold
+        let conqueredCivs = new Set();
+        let aggressionThreshold = 0.5; // Default aggression threshold
         
         // Initialize the scene
         function init() {
@@ -375,7 +376,7 @@
         function generateCivilizations() {
             // Reset metrics when generating new civilizations
             earthEncounters = 0;
-            civilizationConquests.clear();
+            conqueredCivs.clear();
             
             // Remove any existing civilization planets
             removeCivilizations();
@@ -469,23 +470,12 @@
                     expansionStart: Math.random() * 100,
                     expansionRate: expansionRate,
                     baseRadius: baseRadius,
-                    originalColor: {
-                        h: hue,
-                        s: saturation,
-                        l: lightness
-                    },
                     techAdvancementRate: Math.random(),
                     aggressivenessFactor: Math.random(),
                     civilizationId: i, //`civ_${Math.random().toString(36).substr(2, 9)}`,
-                    conqueredCivs: new Set(),
                     encounteredEarth: false,
                     isConquered: false,
                 };
-                
-                civilizationConquests.set(planet.userData.civilizationId, {
-                    conqueredCivs: new Set(),
-                    color: `hsl(${hue * 360}, ${saturation * 100}%, ${lightness * 100}%)`
-                });
                 
                 civilizationsGroup.add(planet);
                 civilizationPlanets.push(planet);
@@ -859,6 +849,10 @@
             
             // Time slider event
             timeSlider.addEventListener('input', function() {
+                if (parseFloat(this.value) < timeValue) {
+                    conqueredCivs.clear();
+                    updateMetricsDisplay();
+                }
                 timeValue = parseFloat(this.value);
                 timeValueDisplay.textContent = timeValue;
                 updateSphereExpansion();
@@ -943,7 +937,7 @@
 
             // Reset metrics
             earthEncounters = 0;
-            civilizationConquests.clear();
+            conqueredCivs.clear();
 
             // Reset all civilizations
             civilizationPlanets.forEach(planet => {
@@ -953,19 +947,8 @@
                 // Reset conquered flag
                 planet.userData.isConquered = false;
 
-                // Reset conquest count
-                planet.userData.conquests = 0;
-
-                // Reset color to original
-                planet.material.color.setHSL(
-                    planet.userData.originalColor.h,
-                    planet.userData.originalColor.s,
-                    planet.userData.originalColor.l
-                );
-
                 // Reset influence sphere
                 if (planet.userData.influenceSphere) {
-                    planet.userData.influenceSphere.material.color.copy(planet.material.color);
                     planet.userData.influenceSphere.scale.set(
                         planet.userData.baseRadius,
                         planet.userData.baseRadius,
@@ -977,17 +960,6 @@
                 if (planet.userData.interactions) {
                     planet.userData.interactions.clear();
                 }
-
-                // Clear conquered civs set
-                planet.userData.conqueredCivs = new Set();
-
-                // Reset conquest tracking in the Map
-                civilizationConquests.set(planet.userData.civilizationId, {
-                    conqueredCivs: new Set(),
-                    color: `hsl(${planet.userData.originalColor.h * 360}, 
-                              ${planet.userData.originalColor.s * 100}%, 
-                              ${planet.userData.originalColor.l * 100}%)`
-                });
             });
 
             // Update metrics display
@@ -1043,9 +1015,14 @@
                         
                         if (aHighlyAggressiveAndAdvanced) {
                             // A dominates through superior tech and high aggression
-                            planetA.userData.conqueredCivs.add(planetB.userData.civilizationId);
-                            civilizationConquests.get(planetA.userData.civilizationId).conqueredCivs.add(planetB.userData.civilizationId);
                             planetB.userData.isConquered = true;
+
+                            if (!conqueredCivs.has(planetB.userData.civilizationId)) {
+                                conqueredCivs.add(planetB.userData.civilizationId);
+                                // Update the top-conqueror display
+                                const topConquerorElement = document.getElementById('top-conqueror');
+                                topConquerorElement.innerHTML += `<span style="color: ${planetB.material.color.getStyle()}">${conqueredCivs.size}: Civ #${planetB.userData.civilizationId} (Aggr: ${planetB.userData.aggressivenessFactor.toFixed(2)}, Tech: ${planetB.userData.techAdvancementRate.toFixed(2)}) was absorbed by Civ #${planetA.userData.civilizationId} (Aggr: ${planetA.userData.aggressivenessFactor.toFixed(2)}, Tech: ${planetA.userData.techAdvancementRate.toFixed(2)})</span><br>`;
+                            }
 
                             // Remove the influence sphere of the conquered planet
                             if (planetB.userData.influenceSphere) {
@@ -1082,44 +1059,12 @@
                 if (distanceToEarth < (sphereRadiusA + 30) && !planetA.userData.encounteredEarth) {
                     earthEncounters++;
                     planetA.userData.encounteredEarth = true;
-                    updateMetricsDisplay();
                 }
             }   
+            updateMetricsDisplay();
         }
 
-        // Update the applyDominantColor function to check if influence spheres exist
-        function applyDominantColor(dominant, subordinate, dominantStrength) {
-            // Get the original colors
-            const dominantColor = dominant.userData.originalColor;
-            const subordinateColor = subordinate.userData.originalColor;
-            
-            // Calculate influence based on strength (stronger = less influence from subordinate)
-            const dominantInfluence = 0.7 + (dominantStrength * 0.3); // 0.7-1.0 range
-            const subordinateInfluence = 1 - dominantInfluence;
-            
-            // Mix the colors
-            const newHue = (dominantColor.h * dominantInfluence) + (subordinateColor.h * subordinateInfluence);
-            const newSat = (dominantColor.s * dominantInfluence) + (subordinateColor.s * subordinateInfluence);
-            const newLight = (dominantColor.l * dominantInfluence) + (subordinateColor.l * subordinateInfluence);
-            
-            // Apply the new color to both civilizations
-            dominant.material.color.setHSL(newHue, newSat, newLight);
-            subordinate.material.color.setHSL(newHue, newSat, newLight);
-            
-            // Update influence spheres if they exist
-            if (dominant.userData.influenceSphere) {
-                dominant.userData.influenceSphere.material.color.copy(dominant.material.color);
-            }
-            if (subordinate.userData.influenceSphere) {
-                subordinate.userData.influenceSphere.material.color.copy(subordinate.material.color);
-            }
-            
-            // Update the conquest data color
-            civilizationConquests.get(dominant.userData.civilizationId).color = 
-                `hsl(${newHue * 360}, ${newSat * 100}%, ${newLight * 100}%)`;
-        }
-
-        // Update the updateSphereOfInfluence function to ensure proper color initialization
+       // Update the updateSphereOfInfluence function to ensure proper color initialization
         function updateSphereOfInfluence(planet, radius) {
             if (planet.userData.isConquered) return; // Skip conquered planets
             
@@ -1177,6 +1122,11 @@
         function updateMetricsDisplay() {
             // Update Earth encounters
             document.getElementById('earth-encounters').textContent = earthEncounters;
+
+            if (conqueredCivs.size == 0) {
+                document.getElementById('top-conqueror').textContent = '';
+                document.getElementById('top-conqueror').style.color = '#ffffff';
+            }
         }
         
         // Setup aggression threshold slider
