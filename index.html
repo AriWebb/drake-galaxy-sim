@@ -1018,7 +1018,7 @@
             for (let i = 0; i < civilizationPlanets.length; i++) {
                 const planetA = civilizationPlanets[i];
                 if (planetA.userData.isConquered) {
-                    console.warn(`i = ${i}: Skipping conquered Planet.`);                    
+//                    console.warn(`i = ${i}: Skipping conquered Planet.`);                    
                     continue; // Skip conquered planets
                 }
                 const timeSinceStartA = Math.max(0, timeValue - planetA.userData.expansionStart);
@@ -1029,7 +1029,7 @@
 
                     const planetB = civilizationPlanets[j];
                     if (planetB.userData.isConquered) {
-                        console.warn(`i = ${i}: Skipping conquered Planet ${j}.`);
+//                        console.warn(`i = ${i}: Skipping conquered Planet ${j}.`);
                         continue; // Skip conquered planets
                     }
                     const distance = planetA.position.distanceTo(planetB.position);
@@ -1049,7 +1049,7 @@
 
                             // Remove the influence sphere of the conquered planet
                             if (planetB.userData.influenceSphere) {
-                                console.warn(`i = ${i}: Removing Planet ${j}.`);
+//                                console.warn(`i = ${i}: Removing Planet ${j}.`);
                                 scene.remove(planetB.userData.influenceSphere);
                                 if (planetB.userData.influenceSphere.geometry) {
                                     planetB.userData.influenceSphere.geometry.dispose();
@@ -1060,7 +1060,7 @@
                                 planetB.userData.influenceSphere = null; // Clear reference
                             } else {
                                 // log missing influence sphere
-                                console.warn(`i = ${i}: Planet ${j} has no influence sphere to remove.`);
+//                                console.warn(`i = ${i}: Planet ${j} has no influence sphere to remove.`);
                             }
                         }
                     }
@@ -1125,7 +1125,7 @@
             
             // Get or create the influence sphere
             if (!planet.userData.influenceSphere) {
-                console.warn(`Creating influence sphere for planet ${planet.userData.civilizationId}`);
+//                console.warn(`Creating influence sphere for planet ${planet.userData.civilizationId}`);
                 const sphereGeometry = new THREE.SphereGeometry(1, 24, 16);
                 const sphereMaterial = new THREE.MeshBasicMaterial({
                     color: planet.material.color.getHex(),
