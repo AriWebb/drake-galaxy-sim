@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Pragma" no-cache>
     <meta http-equiv="Expires" content="0">
     <title>Milky Way Galaxy Visualization</title>
     <style>
@@ -45,12 +45,18 @@
         <p>Use mouse to rotate, scroll to zoom, and right-click drag to pan</p>
         <button id="focusEarth">Focus on Earth</button>
         <button id="focusGalaxy">View Entire Galaxy</button>
+        <br>
+        <div class="metrics">
+            <div>Earth Encounters: <span id="earth-encounters">0</span></div>
+            <div id="top-conqueror"></div>
+        </div>
     </div>
     
     
     <div id="drake-equation">
         <h2>Drake Equation Calculator</h2>
-        <p>Adjust parameters to calculate potential civilizations in our galaxy</p>
+        <p>Adjust parameters to calculate potential civilizations</p>
+        <br>
         
         <div class="slider-container">
             <label for="R">R* = Average rate of star formation (stars/year)</label>
@@ -116,12 +122,7 @@
             </div>
         </div>
 
-        <div class="metrics">
-            <div>Earth Encounters: <span id="earth-encounters">0</span></div>
-            <div id="top-conqueror"></div>
-        </div>
-</div>
-    
+    </div>
     
     <style>
         button {
@@ -225,6 +226,7 @@
             margin: 10px 0;
             color: white;
             font-size: 0.9em;
+            width: 312px;
         }
         .metrics div {
             margin: 5px 0;
@@ -233,6 +235,8 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             font-weight: bold;
             padding-bottom: 15px;
+            max-height: 80vh; /* Adjust height based on window size */
+            overflow-y: auto; /* Add scrolling if content exceeds height */
         }
     </style>
     
@@ -849,7 +853,7 @@
             
             // Time slider event
             timeSlider.addEventListener('input', function() {
-                if (parseFloat(this.value) < timeValue) {
+                if (parseFloat(this.value) < timeValue || timeValue === 0) {
                     conqueredCivs.clear();
                     updateMetricsDisplay();
                 }
@@ -1022,6 +1026,7 @@
                                 // Update the top-conqueror display
                                 const topConquerorElement = document.getElementById('top-conqueror');
                                 topConquerorElement.innerHTML += `<span style="color: ${planetB.material.color.getStyle()}">${conqueredCivs.size}: Civ #${planetB.userData.civilizationId} (Aggr: ${planetB.userData.aggressivenessFactor.toFixed(2)}, Tech: ${planetB.userData.techAdvancementRate.toFixed(2)}) was absorbed by Civ #${planetA.userData.civilizationId} (Aggr: ${planetA.userData.aggressivenessFactor.toFixed(2)}, Tech: ${planetA.userData.techAdvancementRate.toFixed(2)})</span><br>`;
+                                topConquerorElement.scrollTop = topConquerorElement.scrollHeight; // Scroll to the bottom
                             }
 
                             // Remove the influence sphere of the conquered planet
